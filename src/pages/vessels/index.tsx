@@ -1,58 +1,135 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Plus,
   LayoutGrid,
   List,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Split,
-  Ship,
-  ChartNoAxesColumn,
+  PencilIcon,
+  ShareIcon,
+  TrashIcon,
+  Ellipsis,
+  Search,
 } from "lucide-react";
 import clsx from "clsx";
+import { getVesselsApiVesselGet } from "@/api/base/sdk.gen";
+import { Image } from "antd";
 
-const PAGE_SIZE = 55;
+interface Vessel {
+  id_vessel: number;
+  vessel_name: string;
+  callsign?: string;
+  cabang?: string;
+  id_terminal?: string;
+  imo?: string;
+  status?: string;
+}
 
 function VesselsPage() {
   const [view, setView] = useState<"grid" | "list">("grid");
+  const [dtVessels, setDtVessels] = useState<Vessel[]>([]);
   const [page, setPage] = useState(1);
+  const [pageSize] = useState(55);
 
-  const dataVessel = useMemo(
-    () =>
-      Array.from({ length: 177 }).map((_, i) => ({
-        id: i + 1,
-        name: `KMP. VESSEL ${i + 1}`,
-        description:
-          "Lorem ipsum dolor sit amet consectetur adipisicing elit. Perspiciatis odio dignissimos",
-      })),
-    [],
-  );
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
 
-  const totalPage = Math.ceil(dataVessel.length / PAGE_SIZE);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const pagedData = dataVessel.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const fetchAllVessels = async () => {
+    try {
+      setLoading(true);
 
-  // 🔥 pagination window (3 page)
-  const pageWindow = useMemo(() => {
-    let start = Math.max(1, page - 1);
-    let end = Math.min(totalPage, start + 2);
-    if (end - start < 2) start = Math.max(1, end - 2);
-    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
-  }, [page, totalPage]);
+      const res = await getVesselsApiVesselGet({
+        query: {
+          pageSize,
+          current: page,
+          search: debouncedSearch || undefined,
+        },
+      });
+
+      const api = res as any;
+
+      if (!api?.data?.data) return;
+
+      setDtVessels(api.data.data.vessels ?? []);
+      setTotalPages(api.data.data.pagination?.totalPages ?? 1);
+      setPage(api.data.data.pagination?.current ?? 1);
+    } catch (error) {
+      console.error("Error fetching vessels:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllVessels();
+  }, [page, debouncedSearch]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1); // reset ke page 1 saat search berubah
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  const getStatusConfig = (status?: string) => {
+    switch (status) {
+      case "0":
+        return {
+          label: "operational",
+          dot: "bg-green-500",
+          badge: "bg-green-500/20 text-green-600",
+        };
+      case "1":
+        return {
+          label: "docking",
+          dot: "bg-yellow-500",
+          badge: "bg-yellow-500/20 text-yellow-600",
+        };
+      case "2":
+        return {
+          label: "damaged",
+          dot: "bg-red-500",
+          badge: "bg-red-500/20 text-red-600",
+        };
+      default:
+        return {
+          label: "unknown",
+          dot: "bg-gray-400",
+          badge: "bg-gray-400/20 text-gray-500",
+        };
+    }
+  };
 
   return (
     <div className="h-full flex flex-col">
       {/* HEADER */}
       <div className="flex items-center justify-between gap-2 p-3">
-        <Input placeholder="Search here..." className="max-w-sm" />
+        <div className="relative max-w-sm w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search here..."
+            className="pl-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
 
         <div className="flex items-center gap-2">
-          {/* TOGGLE */}
           <Button
             size="icon"
             variant={view === "grid" ? "default" : "outline"}
@@ -69,7 +146,8 @@ function VesselsPage() {
           </Button>
 
           <Button size="sm">
-            <Plus /> Add Vessel
+            <Plus className="w-4 h-4 mr-1" />
+            Add Vessel
           </Button>
         </div>
       </div>
@@ -80,74 +158,118 @@ function VesselsPage() {
           className={clsx(
             "px-3 gap-2",
             view === "grid"
-              ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5"
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
               : "flex flex-col",
           )}
         >
-          {pagedData.map((dv) =>
+          {dtVessels.length === 0 && !loading && (
+            <div className="col-span-full text-center text-muted-foreground py-10">
+              No vessels found
+            </div>
+          )}
+
+          {dtVessels.map((dv) =>
             view === "grid" ? (
-              <Card key={dv.id} className="p-0">
-                <div className="p-3 flex gap-3">
-                  <img
-                    src="https://cdn.pixabay.com/photo/2021/09/16/21/27/container-ship-6631117_1280.jpg"
-                    alt=""
-                    className="w-24 h-24 object-cover rounded-lg"
-                  />
+              <Card key={dv.id_vessel} className="p-0">
+                <div className="p-2">
+                  <div className="flex justify-between items-center">
+                    <label className="uppercase font-semibold">
+                      {dv.vessel_name}
+                    </label>
 
-                  {/* Content kanan */}
-                  <div className="flex flex-col flex-1 justify-between">
-                    {/* Header */}
-                    <div className="flex items-start w-full">
-                      <div className="font-semibold text-xs truncate">
-                        {dv.name}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Ellipsis className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem>
+                            <PencilIcon className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <ShareIcon className="w-4 h-4 mr-2" />
+                            Share
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem variant="destructive">
+                            <TrashIcon className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <div className="flex gap-2 mt-2">
+                    <Image
+                      height={80}
+                      width={80}
+                      src="https://cdn.pixabay.com/photo/2021/09/16/21/27/container-ship-6631117_1280.jpg"
+                      className="object-cover rounded-lg"
+                    />
+
+                    <div className="flex flex-col text-sm">
+                      <div className="grid grid-cols-[100px_1fr]">
+                        <span className="text-muted-foreground">Callsign</span>
+                        <span className="uppercase">{dv.callsign ?? "-"}</span>
                       </div>
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="ml-auto shrink-0"
-                      >
-                        <Eye size={16} />
-                      </Button>
-                    </div>
-
-                    {/* Sub Info */}
-                    <div className="grid grid-cols-[90px_1fr] gap-y-0 text-xs text-muted-foreground mt-2">
-                      <span className="font-medium text-foreground">
-                        Cabang
-                      </span>
-                      <span>PADANG</span>
-
-                      <span className="font-medium text-foreground">
-                        ID Terminal
-                      </span>
-                      <span>PADANG</span>
-
-                      <span className="font-medium text-foreground">IMO</span>
-                      <span>892569823</span>
-
-                      <div className="flex items-center gap-1">
-                        <div className="h-2 w-2 bg-green-500 rounded-full" />
-                        <span className="text-green-500 bg-green-500/30 px-2 rounded-full">
-                          Operational
+                      <div className="grid grid-cols-[100px_1fr]">
+                        <span className="text-muted-foreground">Cabang</span>
+                        <span>{dv.cabang ?? "-"}</span>
+                      </div>
+                      <div className="grid grid-cols-[100px_1fr]">
+                        <span className="text-muted-foreground">
+                          ID Terminal
                         </span>
+                        <span>{dv.id_terminal ?? "-"}</span>
                       </div>
+                      <div className="grid grid-cols-[100px_1fr]">
+                        <span className="text-muted-foreground">IMO</span>
+                        <span>{dv.imo ?? "-"}</span>
+                      </div>
+
+                      {(() => {
+                        const statusConfig = getStatusConfig(dv.status);
+
+                        return (
+                          <div className="flex gap-2 items-center mt-1">
+                            <span
+                              className={clsx(
+                                "w-2 h-2 rounded-full",
+                                statusConfig.dot,
+                              )}
+                            />
+                            <span
+                              className={clsx(
+                                "rounded-lg px-2 py-1 text-[10px] font-semibold",
+                                statusConfig.badge,
+                              )}
+                            >
+                              {statusConfig.label}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
               </Card>
             ) : (
               <div
-                key={dv.id}
+                key={dv.id_vessel}
                 className="border rounded-md p-3 flex items-center justify-between hover:bg-muted"
               >
                 <div>
-                  <div className="font-semibold">{dv.name}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {dv.description}
-                  </div>
+                  <div className="font-semibold">{dv.vessel_name}</div>
                 </div>
-                <div className="text-sm text-muted-foreground">#{dv.id}</div>
+                <div className="text-sm text-muted-foreground">
+                  #{dv.id_vessel}
+                </div>
               </div>
             ),
           )}
@@ -159,30 +281,23 @@ function VesselsPage() {
         <Button
           size="sm"
           variant="outline"
-          disabled={page === 1}
+          disabled={page <= 1 || loading}
           onClick={() => setPage((p) => Math.max(1, p - 1))}
         >
-          <ChevronLeft />
+          Prev
         </Button>
 
-        {pageWindow.map((p) => (
-          <Button
-            key={p}
-            size="sm"
-            variant={p === page ? "default" : "outline"}
-            onClick={() => setPage(p)}
-          >
-            {p}
-          </Button>
-        ))}
+        <span className="text-sm text-muted-foreground">
+          Page {page} of {totalPages}
+        </span>
 
         <Button
           size="sm"
           variant="outline"
-          disabled={page === totalPage}
-          onClick={() => setPage((p) => Math.min(totalPage, p + 1))}
+          disabled={page >= totalPages || loading}
+          onClick={() => setPage((p) => (p < totalPages ? p + 1 : p))}
         >
-          <ChevronRight />
+          Next
         </Button>
       </div>
     </div>

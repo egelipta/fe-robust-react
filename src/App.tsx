@@ -19,7 +19,7 @@ function RequireAuth({ children }: { children: JSX.Element }) {
 function LayoutApp() {
   const location = useLocation();
   const showMap =
-    location.pathname === "/" || location.pathname === "/map-tracking";
+    location.pathname === "/map-tracking" || location.pathname === "/";
 
   return (
     <div className="h-screen w-screen flex flex-col">

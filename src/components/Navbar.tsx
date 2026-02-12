@@ -4,7 +4,7 @@ import { NavLink } from "react-router-dom";
 import { Button } from "./ui/button";
 
 const menuClass = ({ isActive }: { isActive: boolean }) =>
-  `block px-2 py-1 rounded-md text-sm font-medium transition-colors
+  `block px-2 py-1 rounded-none text-sm font-medium transition-colors
    ${
      isActive
        ? "bg-primary/10 text-primary"
@@ -69,19 +69,23 @@ function Navbar() {
         {/* DESKTOP MENU */}
         <div className="hidden md:flex items-center gap-1">
           <NavLink to="/map-tracking" className={menuClass}>
-            <span className="font-semibold text-xs">Map Tracking</span>
+            <span className="font-semibold text-md uppercase">
+              Map Tracking
+            </span>
           </NavLink>
           <NavLink to="/vessels-data" className={menuClass}>
-            <span className="font-semibold text-xs">Vessels Data</span>
+            <span className="font-semibold text-md uppercase">
+              Vessels Data
+            </span>
           </NavLink>
           <NavLink to="/route-id" className={menuClass}>
-            <span className="font-semibold text-xs">Route ID</span>
+            <span className="font-semibold text-md uppercase">Route ID</span>
           </NavLink>
         </div>
       </div>
 
       {/* CENTER TITLE */}
-      <div className="absolute left-1/2 -translate-x-1/2 hidden md:block text-sm font-semibold tracking-wide">
+      <div className="absolute left-1/2 -translate-x-1/2 hidden md:block text-lg font-semibold tracking-wide">
         TELEMATIC TRACKING SERVICE
       </div>
 
