@@ -179,7 +179,7 @@ function VesselsPage() {
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm">
+                        <Button variant="ghost" size="sm">
                           <Ellipsis className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -260,17 +260,118 @@ function VesselsPage() {
                 </div>
               </Card>
             ) : (
-              <div
-                key={dv.id_vessel}
-                className="border rounded-md p-3 flex items-center justify-between hover:bg-muted"
-              >
-                <div>
-                  <div className="font-semibold">{dv.vessel_name}</div>
+              <Card key={dv.id_vessel} className="p-0">
+                <div className="p-2">
+                  {/* HEADER */}
+                  {(() => {
+                    const statusConfig = getStatusConfig(dv.status);
+
+                    return (
+                      <div className="flex justify-between items-center gap-2">
+                        <label className="uppercase font-semibold text-xs truncate">
+                          {dv.vessel_name}
+                        </label>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          {/* STATUS */}
+                          <div className="flex items-center gap-1">
+                            <span
+                              className={clsx(
+                                "w-1.5 h-1.5 rounded-full",
+                                statusConfig.dot,
+                              )}
+                            />
+                            <span
+                              className={clsx(
+                                "rounded px-1.5 py-0.5 text-[9px] font-semibold whitespace-nowrap",
+                                statusConfig.badge,
+                              )}
+                            >
+                              {statusConfig.label}
+                            </span>
+                          </div>
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                          >
+                            <Ellipsis className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* BODY */}
+                  <div className="flex gap-2">
+                    {/* IMAGE */}
+                    <Image
+                      height={40}
+                      width={40}
+                      src="https://cdn.pixabay.com/photo/2021/09/16/21/27/container-ship-6631117_1280.jpg"
+                      className="object-cover rounded-md shrink-0"
+                    />
+
+                    {/* DETAILS */}
+                    <div className="flex-1 text-xs">
+                      <div className="grid grid-cols-2 gap-x-6">
+                        {/* LEFT COLUMN */}
+                        <div className="space-y-1">
+                          <div className="flex">
+                            <span className="w-20 text-muted-foreground">
+                              Callsign
+                            </span>
+                            <span className="font-medium">
+                              {dv.callsign ?? "-"}
+                            </span>
+                          </div>
+
+                          <div className="flex">
+                            <span className="w-20 text-muted-foreground">
+                              Cabang
+                            </span>
+                            <span className="font-medium">
+                              {dv.cabang ?? "-"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* RIGHT COLUMN */}
+                        <div className="space-y-1">
+                          <div className="flex">
+                            <span className="w-20 text-muted-foreground">
+                              ID Terminal
+                            </span>
+                            <span className="font-medium">
+                              {dv.id_terminal ?? "-"}
+                            </span>
+                          </div>
+
+                          <div className="flex">
+                            <span className="w-20 text-muted-foreground">
+                              IMO
+                            </span>
+                            <span className="font-medium">{dv.imo ?? "-"}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  #{dv.id_vessel}
-                </div>
-              </div>
+              </Card>
+
+              // <div
+              //   key={dv.id_vessel}
+              //   className="border rounded-md p-3 flex items-center justify-between hover:bg-muted"
+              // >
+              //   <div>
+              //     <div className="font-semibold">{dv.vessel_name}</div>
+              //   </div>
+              //   <div className="text-sm text-muted-foreground">
+              //     #{dv.id_vessel}
+              //   </div>
+              // </div>
             ),
           )}
         </div>
