@@ -3,6 +3,9 @@ import { Menu, X, LogOut } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { Button } from "./ui/button";
 
+import { useNavigate } from "react-router-dom";
+import { logoutApiLogoutPost } from "@/api/base/sdk.gen";
+
 const menuClass = ({ isActive }: { isActive: boolean }) =>
   `block px-2 py-1 rounded-none text-sm font-medium transition-colors
    ${
@@ -20,6 +23,19 @@ function Navbar() {
     dateStyle: "full",
     timeStyle: "short",
   });
+
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logoutApiLogoutPost();
+    } catch (error) {
+      console.error("Logout API error:", error);
+    } finally {
+      localStorage.clear();
+      navigate("/login", { replace: true });
+    }
+  };
 
   // close dropdown when click outside
   useEffect(() => {
@@ -100,6 +116,7 @@ function Navbar() {
           size="sm"
           className="hidden md:flex cursor-pointer"
           variant={"outline"}
+          onClick={handleLogout}
         >
           <LogOut className="mr-1 h-4 w-4" />
           Logout
@@ -154,6 +171,7 @@ function Navbar() {
             size="sm"
             className="w-full mt-2 cursor-pointer"
             variant="destructive"
+            onClick={handleLogout}
           >
             <LogOut className="mr-1 h-4 w-4" />
             Logout
