@@ -16,14 +16,27 @@ import {
   LayoutGrid,
   List,
   PencilIcon,
-  ShareIcon,
   TrashIcon,
   Ellipsis,
   Search,
+  ReceiptText,
 } from "lucide-react";
 import clsx from "clsx";
-import { getVesselsApiVesselGet } from "@/api/base/sdk.gen";
+import {
+  getVesselsApiVesselGet,
+  deleteVesselApiVesselVesselIdDelete,
+} from "@/api/base/sdk.gen";
 import { Image } from "antd";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Vessel {
   id_vessel: number;
@@ -43,9 +56,12 @@ function VesselsPage() {
 
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
-
+  // STATE SEARCH
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  // STATE DELETE
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchAllVessels = async () => {
     try {
@@ -70,6 +86,30 @@ function VesselsPage() {
       console.error("Error fetching vessels:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+
+    try {
+      setDeleting(true);
+
+      await deleteVesselApiVesselVesselIdDelete({
+        path: {
+          vessel_id: deleteId,
+        },
+      });
+
+      // Refresh data
+      fetchAllVessels();
+
+      // Close dialog
+      setDeleteId(null);
+    } catch (error) {
+      console.error("Delete vessel failed:", error);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -163,8 +203,8 @@ function VesselsPage() {
           )}
         >
           {dtVessels.length === 0 && !loading && (
-            <div className="col-span-full text-center text-muted-foreground py-10">
-              No vessels found
+            <div className="col-span-full flex justify-center items-center min-h-[calc(100vh-250px)] text-[var(--primary)]">
+              <span className="uppercase"> No vessels found</span>
             </div>
           )}
 
@@ -186,21 +226,22 @@ function VesselsPage() {
                       <DropdownMenuContent>
                         <DropdownMenuGroup>
                           <DropdownMenuItem>
+                            <ReceiptText className="w-4 h-4 mr-2" />
+                            Detail
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
                             <PencilIcon className="w-4 h-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <ShareIcon className="w-4 h-4 mr-2" />
-                            Share
-                          </DropdownMenuItem>
                         </DropdownMenuGroup>
                         <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                          <DropdownMenuItem variant="destructive">
-                            <TrashIcon className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuGroup>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeleteId(dv.id_vessel)}
+                        >
+                          <TrashIcon className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -291,13 +332,35 @@ function VesselsPage() {
                             </span>
                           </div>
 
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                          >
-                            <Ellipsis className="w-3.5 h-3.5" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <Ellipsis className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuGroup>
+                                <DropdownMenuItem>
+                                  <ReceiptText className="w-4 h-4 mr-2" />
+                                  Detail
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <PencilIcon className="w-4 h-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                              </DropdownMenuGroup>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuGroup>
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  onClick={() => setDeleteId(dv.id_vessel)}
+                                >
+                                  <TrashIcon className="w-4 h-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     );
@@ -360,18 +423,6 @@ function VesselsPage() {
                   </div>
                 </div>
               </Card>
-
-              // <div
-              //   key={dv.id_vessel}
-              //   className="border rounded-md p-3 flex items-center justify-between hover:bg-muted"
-              // >
-              //   <div>
-              //     <div className="font-semibold">{dv.vessel_name}</div>
-              //   </div>
-              //   <div className="text-sm text-muted-foreground">
-              //     #{dv.id_vessel}
-              //   </div>
-              // </div>
             ),
           )}
         </div>
@@ -401,6 +452,32 @@ function VesselsPage() {
           Next
         </Button>
       </div>
+
+      <AlertDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Vessel</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this vessel? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
