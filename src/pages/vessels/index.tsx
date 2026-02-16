@@ -63,7 +63,7 @@ function VesselsPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchAllVessels = async () => {
+  const fetchVessels = async () => {
     try {
       setLoading(true);
 
@@ -102,7 +102,7 @@ function VesselsPage() {
       });
 
       // Refresh data
-      fetchAllVessels();
+      fetchVessels();
 
       // Close dialog
       setDeleteId(null);
@@ -114,7 +114,7 @@ function VesselsPage() {
   };
 
   useEffect(() => {
-    fetchAllVessels();
+    fetchVessels();
   }, [page, debouncedSearch]);
 
   useEffect(() => {

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { getAllVesselsApiVesselAllGet } from "@/api/base/sdk.gen";
+import VesselOverlay from "@/components/VesselOverlay";
 
 declare global {
   interface Window {
     windyInit: any;
-    L: any; // Leaflet global
+    L: any;
   }
 }
 
@@ -13,19 +14,29 @@ interface MarkerData {
   name: string;
   lat: number;
   long: number;
-  status: "operational" | "docking" | "damaged";
+  status: "0" | "1" | "2" | "unknown";
   heading: number;
 }
 
 export default function MapTrackingPage() {
   const initialized = useRef(false);
+  const windyRef = useRef<any | null>(null);
+  const activeMarkerRef = useRef<any | null>(null); // 🔵 marker aktif
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  // const rafRef = useRef<number | null>(null);
+  // const resizeIdleTimeoutRef = useRef<number | null>(null);
   const [selectedShip, setSelectedShip] = useState<MarkerData | null>(null);
 
   useEffect(() => {
-    if (!window.windyInit) return;
+    if (!window.windyInit || initialized.current) return;
 
     const container = document.getElementById("windy");
-    if (container) container.innerHTML = ""; // bersihkan container sebelum init
+    if (container) container.innerHTML = "";
+
+    try {
+      const prevMap = windyRef.current?.map;
+      if (prevMap && typeof prevMap.remove === "function") prevMap.remove();
+    } catch {}
 
     initialized.current = true;
 
@@ -38,176 +49,179 @@ export default function MapTrackingPage() {
       },
       (windyAPI: any) => {
         const { map } = windyAPI;
+        windyRef.current = windyAPI;
         console.log("✅ Windy loaded");
 
-        const markersData: MarkerData[] = [
-          {
-            id: 1,
-            name: "Marker 1",
-            lat: 4.205075284,
-            long: 96.040041932,
-            status: "operational",
-            heading: 45,
-          },
-          {
-            id: 2,
-            name: "Marker 2",
-            lat: -4.2357333,
-            long: 102.24415,
-            status: "docking",
-            heading: 90,
-          },
-          {
-            id: 3,
-            name: "Marker 3",
-            lat: 0.8147166,
-            long: 106.62345,
-            status: "damaged",
-            heading: 261,
-          },
-          {
-            id: 4,
-            name: "Marker 4",
-            lat: -1.76,
-            long: 117.55,
-            status: "operational",
-            heading: 0,
-          },
-          {
-            id: 5,
-            name: "Marker 5",
-            lat: -5.8545440847222,
-            long: 112.64722726944,
-            status: "operational",
-            heading: 287,
-          },
-          {
-            id: 6,
-            name: "Marker 6",
-            lat: -1.9872166,
-            long: 125.95065,
-            status: "operational",
-            heading: 26,
-          },
-          {
-            id: 7,
-            name: "Marker 7",
-            lat: -6.0477999,
-            long: 138.24555,
-            status: "operational",
-            heading: 8,
-          },
-        ];
+        // 🔵 Helper buat icon (normal & aktif)
+        const createVesselIcon = (
+          fillColor: string,
+          heading: number,
+          active = false,
+        ) => {
+          const ring = active
+            ? `<circle
+                cx="25"
+                cy="25"
+                r="22"
+                fill="none"
+                stroke="#00eaff"
+                stroke-width="3"
+                style="filter: drop-shadow(0 0 6px #00eaff) drop-shadow(0 0 12px #00eaff);"
+              />
+              `
+            : "";
 
-        markersData.forEach((m) => {
-          let fillColor = "#022661"; // default operational
-          if (m.status === "docking") fillColor = "#fabd07";
-          else if (m.status === "damaged") fillColor = "#ab1a03";
-
-          const svgIcon = `
-            <svg width="25" height="25" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M34 14.9277V42.0859L25 33.0859L16 42.0859V14.9277L25 6.37793L34 14.9277Z" fill="${fillColor}" stroke="#ECB536" stroke-width="2"/>
-            </svg>
-          `;
-
-          const customIcon = window.L.divIcon({
+          return window.L.divIcon({
             className: "",
-            html: `<div style="transform: rotate(${m.heading}deg); transform-origin: center;">${svgIcon}</div>`,
+            html: `
+              <div style="transform: rotate(${heading}deg); transform-origin: center;">
+                <svg width="30" height="30" viewBox="0 0 50 50"
+                  xmlns="http://www.w3.org/2000/svg">
+                  ${ring}
+                  <path d="M34 14.9277V42.0859L25 33.0859L16 42.0859V14.9277L25 6.37793L34 14.9277Z"
+                    fill="${fillColor}"
+                    stroke="#ECB536"
+                    stroke-width="2"/>
+                </svg>
+              </div>
+            `,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+          });
+        };
+
+        (async () => {
+          let items: any[] = [];
+          try {
+            const resp = await getAllVesselsApiVesselAllGet({});
+            const r = (resp as any)?.data ?? (resp as any);
+            if (Array.isArray(r?.data)) items = r.data;
+            else if (Array.isArray(r)) items = r;
+            else if (Array.isArray(r?.items)) items = r.items;
+          } catch (e) {
+            console.error("Failed to fetch vessels:", e);
+          }
+
+          let markersLayer: any = null;
+          try {
+            markersLayer = window.L.layerGroup().addTo(map);
+          } catch {
+            markersLayer = null;
+          }
+
+          items.forEach((v: any, idx: number) => {
+            const lat = v.lat ?? v.latitude ?? null;
+            const lon = v.long ?? v.longitude ?? v.longt ?? null;
+            if (lat == null || lon == null) return;
+
+            let rawStatus: any = v.status;
+            if (rawStatus === "" || rawStatus == null) rawStatus = "unknown";
+            else rawStatus = String(rawStatus);
+
+            const m: MarkerData = {
+              id: v.id_vessel ?? v.id ?? idx,
+              name: v.vessel_name ?? v.name ?? `Vessel ${idx}`,
+              lat: Number(lat),
+              long: Number(lon),
+              status:
+                rawStatus === "0" || rawStatus === "1" || rawStatus === "2"
+                  ? rawStatus
+                  : "unknown",
+              heading: v.heading ?? 0,
+            };
+
+            let fillColor = "#022661";
+            if (m.status === "1") fillColor = "#fabd07";
+            else if (m.status === "2") fillColor = "#ab1a03";
+            else if (m.status === "unknown") fillColor = "#6b7280";
+
+            const normalIcon = createVesselIcon(fillColor, m.heading, false);
+            const activeIcon = createVesselIcon(fillColor, m.heading, true);
+
+            const marker = window.L.marker([m.lat, m.long], {
+              icon: normalIcon,
+            });
+
+            if (markersLayer && typeof markersLayer.addLayer === "function") {
+              markersLayer.addLayer(marker);
+            } else {
+              marker.addTo(map);
+            }
+
+            marker.on("click", () => {
+              // 🔁 reset marker sebelumnya
+              if (activeMarkerRef.current) {
+                activeMarkerRef.current.setIcon(
+                  activeMarkerRef.current.__normalIcon,
+                );
+              }
+
+              // 🔵 set marker ini aktif
+              marker.setIcon(activeIcon);
+              activeMarkerRef.current = marker;
+              marker.__normalIcon = normalIcon;
+
+              // 🎯 Fokus ke vessel (smooth animation)
+              if (map && typeof map.flyTo === "function") {
+                map.flyTo([m.lat, m.long], 7, {
+                  animate: true,
+                  duration: 0.8, // detik
+                });
+              }
+
+              setSelectedShip(m);
+            });
           });
 
-          const marker = window.L.marker([m.lat, m.long], {
-            icon: customIcon,
-          }).addTo(map);
+          windyRef.current.markersLayer = markersLayer;
+        })();
 
-          marker.on("click", () => {
-            setSelectedShip(m);
-          });
-        });
+        map.invalidateSize(true);
+        setTimeout(() => map.invalidateSize(true), 200);
       },
     );
 
     return () => {
       initialized.current = false;
+
+      try {
+        const markersLayer = windyRef.current?.markersLayer;
+        if (markersLayer?.clearLayers) markersLayer.clearLayers();
+
+        const m = windyRef.current?.map;
+        if (m?.remove) m.remove();
+      } catch {}
+
+      windyRef.current = null;
+
       const container = document.getElementById("windy");
       if (container) container.innerHTML = "";
+
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+        resizeObserverRef.current = null;
+      }
     };
   }, []);
 
   return (
     <div className="relative h-full w-full flex flex-col">
-      {/* Peta */}
       <div id="windy" className="flex-1 relative" />
 
-      {/* Overlay info kapal */}
       {selectedShip && (
-        <div className="bg-[var(--navbar)] p-4 shadow-md relative h-52">
-          {/* Tombol Close kanan atas */}
-          <button
-            onClick={() => setSelectedShip(null)}
-            className="absolute top-2 right-2 p-1 cursor-pointer"
-          >
-            <X size={18} />
-          </button>
-
-          <h3 className="font-bold text-lg">{selectedShip.name}</h3>
-          <p>
-            Status:{" "}
-            <span
-              className={`font-semibold ${
-                selectedShip.status === "operational"
-                  ? "text-green-600"
-                  : selectedShip.status === "docking"
-                    ? "text-yellow-600"
-                    : "text-red-600"
-              }`}
-            >
-              {selectedShip.status}
-            </span>
-          </p>
-          <p>Heading: {selectedShip.heading}°</p>
-          <p>
-            Lat: {selectedShip.lat}, Lon: {selectedShip.long}
-          </p>
-        </div>
+        <VesselOverlay
+          vesselId={selectedShip.id}
+          onClose={() => {
+            if (activeMarkerRef.current) {
+              activeMarkerRef.current.setIcon(
+                activeMarkerRef.current.__normalIcon,
+              );
+              activeMarkerRef.current = null;
+            }
+            setSelectedShip(null);
+          }}
+        />
       )}
     </div>
   );
 }
-
-// import { useEffect, useRef } from "react";
-
-// declare global {
-//   interface Window {
-//     windyInit: any;
-//   }
-// }
-
-// export default function MapTrackingPage() {
-//   const initialized = useRef(false);
-
-//   useEffect(() => {
-//     if (!window.windyInit || initialized.current) return;
-
-//     initialized.current = true;
-
-//     window.windyInit(
-//       {
-//         key: "gUOhUQB6gvqbGhlGh8rcxifcO04kgAw2",
-//         lat: -1.75,
-//         lon: 117.5,
-//         zoom: 5,
-//         overlay: "rain", // 🔥 langsung set rain saat init
-//       },
-//       (windyAPI: any) => {
-//         const { store } = windyAPI;
-
-//         console.log("✅ Windy loaded");
-
-//         // Force set rain overlay
-//         store.set("overlay", "rain");
-//       },
-//     );
-//   }, []);
-
-//   return <div id="windy" className="absolute inset-0 h-full w-full" />;
-// }

@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { logoutApiLogoutPost } from "@/api/base/sdk.gen";
 
 const menuClass = ({ isActive }: { isActive: boolean }) =>
-  `block px-2 py-1 rounded-none text-sm font-medium transition-colors
+  `block px-2 py-1 rounded-md text-sm font-medium transition-colors
    ${
      isActive
        ? "bg-primary/10 text-primary"
@@ -85,17 +85,13 @@ function Navbar() {
         {/* DESKTOP MENU */}
         <div className="hidden md:flex items-center gap-1">
           <NavLink to="/map-tracking" className={menuClass}>
-            <span className="font-semibold text-md uppercase">
-              Map Tracking
-            </span>
+            <span className="font-semibold text-md">Map Tracking</span>
           </NavLink>
           <NavLink to="/vessels-data" className={menuClass}>
-            <span className="font-semibold text-md uppercase">
-              Vessels Data
-            </span>
+            <span className="font-semibold text-md">Vessels Data</span>
           </NavLink>
           <NavLink to="/route-id" className={menuClass}>
-            <span className="font-semibold text-md uppercase">Route ID</span>
+            <span className="font-semibold text-md">Route ID</span>
           </NavLink>
         </div>
       </div>
