@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getAllVesselsApiVesselAllGet } from "@/api/base/sdk.gen";
 import VesselOverlay from "@/components/VesselOverlay";
+import { RouteLine } from "./components/RouteLine";
 
 declare global {
   interface Window {
@@ -26,6 +27,7 @@ export default function MapTrackingPage() {
   // const rafRef = useRef<number | null>(null);
   // const resizeIdleTimeoutRef = useRef<number | null>(null);
   const [selectedShip, setSelectedShip] = useState<MarkerData | null>(null);
+  const routeLayerRef = useRef<any | null>(null);
 
   useEffect(() => {
     if (!window.windyInit || initialized.current) return;
@@ -169,6 +171,7 @@ export default function MapTrackingPage() {
                 });
               }
 
+              RouteLine(map, m.id, routeLayerRef);
               setSelectedShip(m);
             });
           });
@@ -218,6 +221,12 @@ export default function MapTrackingPage() {
               );
               activeMarkerRef.current = null;
             }
+
+            if (routeLayerRef.current) {
+              windyRef.current?.map?.removeLayer(routeLayerRef.current);
+              routeLayerRef.current = null;
+            }
+
             setSelectedShip(null);
           }}
         />

@@ -23,6 +23,7 @@
   --accent-foreground: oklch(0.4254 0.1159 144.3078);
   --destructive: #c62828;
   --destructive-foreground: oklch(1 0 0);
+  --text-prymary: oklch(26.139% 0.00148 16.148);
 
   --border: oklch(0.3049 0.0059 179.3079);
   --input: oklch(0.3049 0.0059 179.3079);
@@ -87,6 +88,7 @@
   --accent-foreground: oklch(0.9423 0.0097 72.6595);
   --destructive: #c62828;
   --destructive-foreground: oklch(1 0 0);
+  --text-primary: oklch(1 0 0);
 
   --border: #3a6449;
   --input: #3a6449;
@@ -202,4 +204,20 @@ body,
     font-family: var(--font-sans);
     letter-spacing: var(--tracking-normal);
   }
+}
+
+/* Hilangkan background & shadow default leaflet */
+.leaflet-popup-content-wrapper {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-tip {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
 }
