@@ -164,9 +164,9 @@ export const RouteLine = async (
     routeLayerRef.current = layerGroup.addTo(map);
 
     // 🎯 Auto zoom
-    map.fitBounds(routeLine.getBounds(), {
-      padding: [50, 50],
-    });
+    // map.fitBounds(routeLine.getBounds(), {
+    //   padding: [50, 50],
+    // });
   } catch (err) {
     console.error("Failed to fetch route:", err);
   }

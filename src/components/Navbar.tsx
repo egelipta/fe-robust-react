@@ -3,7 +3,6 @@ import { Menu, X, LogOut } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { Button } from "./ui/button";
 
-import { useNavigate } from "react-router-dom";
 import { logoutApiLogoutPost } from "@/api/base/sdk.gen";
 
 const menuClass = ({ isActive }: { isActive: boolean }) =>
@@ -24,18 +23,37 @@ function Navbar() {
     timeStyle: "short",
   });
 
-  const navigate = useNavigate();
-
   const handleLogout = async () => {
     try {
       await logoutApiLogoutPost();
     } catch (error) {
       console.error("Logout API error:", error);
     } finally {
-      localStorage.clear();
-      navigate("/login", { replace: true });
+      const authKeys = [
+        "auth_authenticated",
+        "auth",
+        "auth_user",
+        "auth_employee",
+        "auth_company",
+        "auth_permissions",
+        "username",
+        "employee_name",
+      ];
+      authKeys.forEach((key) => localStorage.removeItem(key));
+      window.location.replace("/login");
     }
   };
+
+  // const handleLogout = async () => {
+  //   try {
+  //     await logoutApiLogoutPost();
+  //   } catch (error) {
+  //     console.error("Logout API error:", error);
+  //   } finally {
+  //     localStorage.clear();
+  //     navigate("/login", { replace: true });
+  //   }
+  // };
 
   // close dropdown when click outside
   useEffect(() => {

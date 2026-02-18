@@ -9,6 +9,7 @@ import Navbar from "./components/Navbar";
 import MapTrackingPage from "./pages/mapTracking";
 import VesselsPage from "./pages/vessels";
 import LoginPage from "./pages/Login";
+import RouteIdPage from "./pages/routeId";
 import type { JSX } from "react";
 
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -34,6 +35,7 @@ function LayoutApp() {
         {!showMap && (
           <Routes>
             <Route path="/vessels-data" element={<VesselsPage />} />
+            <Route path="/route-id" element={<RouteIdPage />} />
           </Routes>
         )}
       </div>
