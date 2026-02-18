@@ -37,6 +37,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import AddVesselDialog from "./components/AddVesselDialog";
+import { toast } from "sonner";
 
 interface Vessel {
   id_vessel: number;
@@ -62,6 +64,8 @@ function VesselsPage() {
   // STATE DELETE
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const [openAdd, setOpenAdd] = useState(false);
 
   const fetchVessels = async () => {
     try {
@@ -103,7 +107,7 @@ function VesselsPage() {
 
       // Refresh data
       fetchVessels();
-
+      toast.success("Berhasil dihapus");
       // Close dialog
       setDeleteId(null);
     } catch (error) {
@@ -185,7 +189,7 @@ function VesselsPage() {
             <List className="w-4 h-4" />
           </Button>
 
-          <Button size="sm">
+          <Button size="sm" onClick={() => setOpenAdd(true)}>
             <Plus className="w-4 h-4 mr-1" />
             Add Vessel
           </Button>
@@ -478,6 +482,12 @@ function VesselsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AddVesselDialog
+        open={openAdd}
+        onOpenChange={setOpenAdd}
+        onSuccess={fetchVessels}
+      />
     </div>
   );
 }
