@@ -11,6 +11,7 @@ import VesselsPage from "./pages/vessels";
 import LoginPage from "./pages/Login";
 import RouteIdPage from "./pages/routeId";
 import type { JSX } from "react";
+import { Toaster } from "@/components/ui/sonner";
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const isAuth = localStorage.getItem("auth") === "true";
@@ -25,6 +26,7 @@ function LayoutApp() {
   return (
     <div className="h-screen w-screen flex flex-col">
       <Navbar />
+      <Toaster position="top-right" />
 
       <div className="flex-1 relative overflow-hidden">
         {/* 🔥 Map tidak pernah unmount */}

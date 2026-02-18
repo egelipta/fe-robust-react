@@ -2,10 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { getAllVesselsApiVesselAllGet } from "@/api/base/sdk.gen";
 import VesselOverlay from "@/components/VesselOverlay";
 import { RouteLine } from "./components/RouteLine";
-import { Bookmark } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import FilterVessel from "./components/FilterStatus";
 import FilterSearch from "./components/FilterSearch";
+import Bookmarks from "./components/Bookmarks";
 
 declare global {
   interface Window {
@@ -37,12 +36,34 @@ export default function MapTrackingPage() {
   );
   const [selectedShip, setSelectedShip] = useState<MarkerData | null>(null);
 
-  const [openPanel, setOpenPanel] = useState<"search" | "status" | null>(null);
+  const [openPanel, setOpenPanel] = useState<
+    "search" | "status" | "bookmark" | null
+  >(null);
 
   const [statusFilter, setStatusFilter] = useState<
     MarkerData["status"] | "all"
   >("all");
   const statusFilterRef = useRef<MarkerData["status"] | "all">("all");
+
+  const findMarkerNear = (markersLayer: any, lat: number, lon: number) => {
+    let found: any = null;
+    let bestDist = Number.POSITIVE_INFINITY;
+
+    markersLayer.eachLayer((layer: any) => {
+      if (!layer.getLatLng) return;
+      const ll = layer.getLatLng();
+      const dLat = Number(ll.lat) - lat;
+      const dLon = Number(ll.lng) - lon;
+      const dist = dLat * dLat + dLon * dLon;
+      if (dist < bestDist) {
+        bestDist = dist;
+        found = layer;
+      }
+    });
+
+    // tolerance ~ within ~100m-ish (very rough) in degrees
+    return bestDist <= 0.001 * 0.001 ? found : null;
+  };
 
   useEffect(() => {
     statusFilterRef.current = statusFilter;
@@ -186,6 +207,7 @@ export default function MapTrackingPage() {
             }).addTo(markersLayer);
             marker.__normalIcon = normalIcon;
             marker.__activeIcon = activeIcon;
+            marker.__markerData = m;
 
             marker.on("click", () => {
               if (activeMarkerRef.current) {
@@ -303,9 +325,64 @@ export default function MapTrackingPage() {
         />
 
         {/* BOOKMARK */}
-        <Button className="w-10 h-10 rounded-full bg-[var(--navbar)] text-[var(--text-primary)] shadow-lg flex items-center justify-center hover:bg-primary hover:text-white transition-all duration-200">
-          <Bookmark size={20} />
-        </Button>
+        <Bookmarks
+          open={openPanel === "bookmark"}
+          onOpenChange={(open) => setOpenPanel(open ? "bookmark" : null)}
+          selectedVesselName={selectedShip?.name ?? null}
+          defaultLat={
+            windyRef.current?.map?.getCenter?.()?.lat ?? selectedShip?.lat
+          }
+          defaultLon={
+            windyRef.current?.map?.getCenter?.()?.lng ?? selectedShip?.long
+          }
+          defaultZoom={windyRef.current?.map?.getZoom?.() ?? 7}
+          onSelect={(b) => {
+            const map = windyRef.current?.map;
+            const markersLayer = windyRef.current?.markersLayer;
+            if (!map) return;
+
+            const lat = Number(b.lat);
+            const lon = Number(b.lon);
+            const zoom = Number(b.zoom ?? 7);
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+            map.flyTo([lat, lon], Number.isFinite(zoom) ? zoom : 7, {
+              animate: true,
+              duration: 0.8,
+            });
+
+            setTimeout(() => {
+              try {
+                map.invalidateSize?.(true);
+              } catch {}
+            }, 0);
+
+            if (markersLayer) {
+              const clickedMarker = findMarkerNear(markersLayer, lat, lon);
+
+              if (clickedMarker) {
+                if (activeMarkerRef.current) {
+                  activeMarkerRef.current.setIcon(
+                    activeMarkerRef.current.__normalIcon,
+                  );
+                }
+
+                clickedMarker.setIcon(
+                  clickedMarker.__activeIcon ?? clickedMarker.__normalIcon,
+                );
+                activeMarkerRef.current = clickedMarker;
+
+                const m = (clickedMarker.__markerData as MarkerData) ?? null;
+                if (m) {
+                  RouteLine(map, m.id, routeLayerRef);
+                  setSelectedShip(m);
+                }
+              }
+            }
+
+            setOpenPanel(null);
+          }}
+        />
       </div>
 
       {/* MAP */}

@@ -121,7 +121,7 @@ export default function FilterSearch({
           value={searchValue}
           onChange={(e) => handleSearch(e.target.value)}
           placeholder="Search vessel..."
-          className="h-9 shadow-none focus-visible:ring-0 rounded-full"
+          className="h-9"
           autoFocus={open}
         />
       </div>
