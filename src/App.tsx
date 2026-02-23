@@ -8,7 +8,6 @@ import {
 import Navbar from "./components/Navbar";
 import MapTrackingPage from "./pages/mapTracking";
 import VesselsPage from "./pages/vessels";
-import EditVesselPage from "./pages/vessels/EditVessel";
 import DetailVesselPage from "./pages/vessels/components/DetailVessel";
 import LoginPage from "./pages/Login";
 import RouteIdPage from "./pages/routeId";
@@ -39,7 +38,6 @@ function LayoutApp() {
         {!showMap && (
           <Routes>
             <Route path="/vessels-data" element={<VesselsPage />} />
-            <Route path="/vessels-data/:id/edit" element={<EditVesselPage />} />
             <Route
               path="/vessels-data/:id/detail"
               element={<DetailVesselPage />}

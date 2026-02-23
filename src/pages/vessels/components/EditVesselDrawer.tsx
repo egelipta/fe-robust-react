@@ -305,7 +305,9 @@ export default function EditVesselDrawer({
 
         if (cancelled) return;
 
-        const companiesData = companiesRes as { data?: { data?: CompanyOption[] } };
+        const companiesData = companiesRes as {
+          data?: { data?: CompanyOption[] };
+        };
         const regionsData = regionsRes as { data?: { data?: RegionOption[] } };
         const assetData = assetRes as { data?: { data?: AssetDetailResponse } };
 
@@ -398,9 +400,7 @@ export default function EditVesselDrawer({
       <DrawerContent className="data-[vaul-drawer-direction=right]:w-full data-[vaul-drawer-direction=right]:sm:max-w-3xl">
         <DrawerHeader>
           <DrawerTitle>Edit Vessel</DrawerTitle>
-          <DrawerDescription>
-            Ubah data vessel menggunakan form yang sama seperti Add Vessel.
-          </DrawerDescription>
+          <DrawerDescription>Ubah data vessel</DrawerDescription>
         </DrawerHeader>
 
         <div className="px-4 pb-2">
@@ -412,7 +412,9 @@ export default function EditVesselDrawer({
                   <div
                     className={clsx(
                       "text-sm font-medium",
-                      step === current ? "text-primary" : "text-muted-foreground",
+                      step === current
+                        ? "text-primary"
+                        : "text-muted-foreground",
                     )}
                   >
                     {label}
@@ -442,7 +444,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="Terminal"
                     value={form.id_terminal}
-                    onChange={(e) => handleChange("id_terminal", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("id_terminal", e.target.value)
+                    }
                   />
                 </div>
 
@@ -485,7 +489,9 @@ export default function EditVesselDrawer({
                 <div className="space-y-1">
                   <Label className="text-xs">Company</Label>
                   <Select
-                    value={form.id_company !== null ? String(form.id_company) : ""}
+                    value={
+                      form.id_company !== null ? String(form.id_company) : ""
+                    }
                     onValueChange={(value) =>
                       handleChange("id_company", value ? Number(value) : null)
                     }
@@ -497,7 +503,10 @@ export default function EditVesselDrawer({
                       {companies
                         .filter((c) => c.name)
                         .map((company) => (
-                          <SelectItem key={company.id_com} value={String(company.id_com)}>
+                          <SelectItem
+                            key={company.id_com}
+                            value={String(company.id_com)}
+                          >
                             {company.name}
                           </SelectItem>
                         ))}
@@ -520,7 +529,10 @@ export default function EditVesselDrawer({
                       {regions
                         .filter((c) => c.name)
                         .map((region) => (
-                          <SelectItem key={region.id_reg} value={String(region.id_reg)}>
+                          <SelectItem
+                            key={region.id_reg}
+                            value={String(region.id_reg)}
+                          >
                             {region.name}
                           </SelectItem>
                         ))}
@@ -537,7 +549,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="LOA"
                     value={form.loa ?? ""}
-                    onChange={(e) => handleChange("loa", parseNumberOrNull(e.target.value))}
+                    onChange={(e) =>
+                      handleChange("loa", parseNumberOrNull(e.target.value))
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -545,7 +559,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="LBP"
                     value={form.lbp ?? ""}
-                    onChange={(e) => handleChange("lbp", parseNumberOrNull(e.target.value))}
+                    onChange={(e) =>
+                      handleChange("lbp", parseNumberOrNull(e.target.value))
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -553,7 +569,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="Depth"
                     value={form.depth ?? ""}
-                    onChange={(e) => handleChange("depth", parseNumberOrNull(e.target.value))}
+                    onChange={(e) =>
+                      handleChange("depth", parseNumberOrNull(e.target.value))
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -571,7 +589,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="Draft"
                     value={form.draft ?? ""}
-                    onChange={(e) => handleChange("draft", parseNumberOrNull(e.target.value))}
+                    onChange={(e) =>
+                      handleChange("draft", parseNumberOrNull(e.target.value))
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -579,7 +599,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="GT"
                     value={form.gt ?? ""}
-                    onChange={(e) => handleChange("gt", parseNumberOrNull(e.target.value))}
+                    onChange={(e) =>
+                      handleChange("gt", parseNumberOrNull(e.target.value))
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -600,7 +622,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="Merek Engine"
                     value={form.merek_engine}
-                    onChange={(e) => handleChange("merek_engine", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("merek_engine", e.target.value)
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -608,7 +632,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="Engine Type"
                     value={form.engine_type}
-                    onChange={(e) => handleChange("engine_type", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("engine_type", e.target.value)
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -644,7 +670,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="HP AUX Engine"
                     value={form.aux_engine_hp}
-                    onChange={(e) => handleChange("aux_engine_hp", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("aux_engine_hp", e.target.value)
+                    }
                   />
                 </div>
               </div>
@@ -657,7 +685,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="NO Sertifikat"
                     value={form.no_sertifikat}
-                    onChange={(e) => handleChange("no_sertifikat", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("no_sertifikat", e.target.value)
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -673,7 +703,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="Tgl. Expired"
                     value={form.tgl_expired ?? ""}
-                    onChange={(e) => handleChange("tgl_expired", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("tgl_expired", e.target.value)
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -704,7 +736,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="SSB"
                     value={form.ssb ?? ""}
-                    onChange={(e) => handleChange("ssb", parseNumberOrNull(e.target.value))}
+                    onChange={(e) =>
+                      handleChange("ssb", parseNumberOrNull(e.target.value))
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -712,7 +746,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="VHF"
                     value={form.vhf ?? ""}
-                    onChange={(e) => handleChange("vhf", parseNumberOrNull(e.target.value))}
+                    onChange={(e) =>
+                      handleChange("vhf", parseNumberOrNull(e.target.value))
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -720,7 +756,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="EPIRB"
                     value={form.epirb ?? ""}
-                    onChange={(e) => handleChange("epirb", parseNumberOrNull(e.target.value))}
+                    onChange={(e) =>
+                      handleChange("epirb", parseNumberOrNull(e.target.value))
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -728,7 +766,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="SAR"
                     value={form.sar ?? ""}
-                    onChange={(e) => handleChange("sar", parseNumberOrNull(e.target.value))}
+                    onChange={(e) =>
+                      handleChange("sar", parseNumberOrNull(e.target.value))
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -736,7 +776,9 @@ export default function EditVesselDrawer({
                   <Input
                     placeholder="VMS"
                     value={form.vms ?? ""}
-                    onChange={(e) => handleChange("vms", parseNumberOrNull(e.target.value))}
+                    onChange={(e) =>
+                      handleChange("vms", parseNumberOrNull(e.target.value))
+                    }
                   />
                 </div>
                 <div className="space-y-1">
@@ -745,7 +787,10 @@ export default function EditVesselDrawer({
                     placeholder="Fuel Censor"
                     value={form.fuel_censor ?? ""}
                     onChange={(e) =>
-                      handleChange("fuel_censor", parseNumberOrNull(e.target.value))
+                      handleChange(
+                        "fuel_censor",
+                        parseNumberOrNull(e.target.value),
+                      )
                     }
                   />
                 </div>
@@ -755,7 +800,10 @@ export default function EditVesselDrawer({
                     placeholder="Telp Sat"
                     value={form.telp_sat ?? ""}
                     onChange={(e) =>
-                      handleChange("telp_sat", parseNumberOrNull(e.target.value))
+                      handleChange(
+                        "telp_sat",
+                        parseNumberOrNull(e.target.value),
+                      )
                     }
                   />
                 </div>
@@ -771,7 +819,10 @@ export default function EditVesselDrawer({
                       placeholder="Passengers"
                       value={form.passenger ?? ""}
                       onChange={(e) =>
-                        handleChange("passenger", parseNumberOrNull(e.target.value))
+                        handleChange(
+                          "passenger",
+                          parseNumberOrNull(e.target.value),
+                        )
                       }
                     />
                   </div>
@@ -780,7 +831,9 @@ export default function EditVesselDrawer({
                     <Input
                       placeholder="Cars"
                       value={form.car ?? ""}
-                      onChange={(e) => handleChange("car", parseNumberOrNull(e.target.value))}
+                      onChange={(e) =>
+                        handleChange("car", parseNumberOrNull(e.target.value))
+                      }
                     />
                   </div>
                 </div>
@@ -800,7 +853,9 @@ export default function EditVesselDrawer({
                     type="file"
                     accept="image/*"
                     onChange={(e) =>
-                      handleFileChange(e.target.files ? e.target.files[0] : null)
+                      handleFileChange(
+                        e.target.files ? e.target.files[0] : null,
+                      )
                     }
                   />
 
