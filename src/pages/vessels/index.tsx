@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import AddVesselDialog from "./components/AddVesselDialog";
+import EditVesselDrawer from "./components/EditVesselDrawer";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -49,6 +50,14 @@ interface Vessel {
   id_terminal?: string;
   imo?: string;
   status?: string;
+}
+
+interface VesselListResponse {
+  vessels?: Vessel[];
+  pagination?: {
+    totalPages?: number;
+    current?: number;
+  };
 }
 
 function VesselsPage() {
@@ -67,9 +76,11 @@ function VesselsPage() {
   const [deleting, setDeleting] = useState(false);
 
   const [openAdd, setOpenAdd] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
+  const [editVesselId, setEditVesselId] = useState<number | null>(null);
   const navigate = useNavigate();
 
-  const fetchVessels = async () => {
+  const fetchVessels = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -81,7 +92,7 @@ function VesselsPage() {
         },
       });
 
-      const api = res as any;
+      const api = res as { data?: { data?: VesselListResponse } };
 
       if (!api?.data?.data) return;
 
@@ -93,7 +104,7 @@ function VesselsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedSearch, page, pageSize]);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -121,7 +132,7 @@ function VesselsPage() {
 
   useEffect(() => {
     fetchVessels();
-  }, [page, debouncedSearch]);
+  }, [fetchVessels]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -240,9 +251,10 @@ function VesselsPage() {
                             Detail
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() =>
-                              navigate(`/vessels-data/${dv.id_vessel}/edit`)
-                            }
+                            onClick={() => {
+                              setEditVesselId(dv.id_vessel);
+                              setOpenEdit(true);
+                            }}
                           >
                             <PencilIcon className="w-4 h-4 mr-2" />
                             Edit
@@ -354,16 +366,21 @@ function VesselsPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
                               <DropdownMenuGroup>
-                                <DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    navigate(
+                                      `/vessels-data/${dv.id_vessel}/detail`,
+                                    )
+                                  }
+                                >
                                   <ReceiptText className="w-4 h-4 mr-2" />
                                   Detail
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() =>
-                                    navigate(
-                                      `/vessels-data/${dv.id_vessel}/edit`,
-                                    )
-                                  }
+                                  onClick={() => {
+                                    setEditVesselId(dv.id_vessel);
+                                    setOpenEdit(true);
+                                  }}
                                 >
                                   <PencilIcon className="w-4 h-4 mr-2" />
                                   Edit
@@ -502,6 +519,16 @@ function VesselsPage() {
       <AddVesselDialog
         open={openAdd}
         onOpenChange={setOpenAdd}
+        onSuccess={fetchVessels}
+      />
+
+      <EditVesselDrawer
+        open={openEdit}
+        vesselId={editVesselId}
+        onOpenChange={(open) => {
+          setOpenEdit(open);
+          if (!open) setEditVesselId(null);
+        }}
         onSuccess={fetchVessels}
       />
     </div>
