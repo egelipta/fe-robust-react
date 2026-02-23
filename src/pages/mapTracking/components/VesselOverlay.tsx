@@ -52,22 +52,7 @@ export default function VesselOverlay({ vesselId, onClose }: Props) {
   const dVessel = data ?? {};
 
   const rawStatus = dVessel.status ?? null;
-  const statusLabel =
-    rawStatus === "0"
-      ? "operational"
-      : rawStatus === "1"
-        ? "docking"
-        : rawStatus === "2"
-          ? "damaged"
-          : "unknown";
-  const statusClass =
-    rawStatus === "0"
-      ? "text-green-600"
-      : rawStatus === "1"
-        ? "text-yellow-600"
-        : rawStatus === "2"
-          ? "text-red-600"
-          : "text-gray-600";
+  void rawStatus;
 
   return (
     <div className="bg-[var(--navbar)] p-3 shadow-md relative h-62">

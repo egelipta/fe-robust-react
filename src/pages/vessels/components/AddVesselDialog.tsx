@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,6 @@ import {
 } from "@/api/base/sdk.gen";
 import clsx from "clsx";
 import { Label } from "@/components/ui/label";
-import { useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -24,6 +23,94 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+
+type FormState = {
+  asset_name: string;
+  id_terminal: string;
+  mmsi: string;
+  imo: string;
+  call_sign: string;
+  type: string;
+  id_company: number | null;
+  cabang: string | null;
+  loa: number | null;
+  lbp: number | null;
+  depth: number | null;
+  breadth: number | null;
+  draft: number | null;
+  gt: number | null;
+  build_year: string;
+  merek_engine: string;
+  engine_type: string;
+  engine_hp: string;
+  aux_engine_merek: string;
+  aux_engine_type: string;
+  aux_engine_hp: string;
+  no_sertifikat: string;
+  tgl_terbit: string;
+  tgl_expired: string;
+  statussmc: string;
+  tahapan_verifikasi: string;
+  ssb: number | null;
+  vhf: number | null;
+  epirb: number | null;
+  sar: number | null;
+  vms: number | null;
+  fuel_censor: number | null;
+  telp_sat: number | null;
+  passenger: number | null;
+  car: number | null;
+  note: string;
+  image: File | null;
+};
+
+const initialForm: FormState = {
+  asset_name: "",
+  id_terminal: "",
+  mmsi: "",
+  imo: "",
+  call_sign: "",
+  type: "",
+  id_company: null,
+  cabang: null,
+  loa: null,
+  lbp: null,
+  depth: null,
+  breadth: null,
+  draft: null,
+  gt: null,
+  build_year: "",
+  merek_engine: "",
+  engine_type: "",
+  engine_hp: "",
+  aux_engine_merek: "",
+  aux_engine_type: "",
+  aux_engine_hp: "",
+  no_sertifikat: "",
+  tgl_terbit: "",
+  tgl_expired: "",
+  statussmc: "",
+  tahapan_verifikasi: "",
+  ssb: null,
+  vhf: null,
+  epirb: null,
+  sar: null,
+  vms: null,
+  fuel_censor: null,
+  telp_sat: null,
+  passenger: null,
+  car: null,
+  note: "",
+  image: null,
+};
+
+const parseNumberOrNull = (value: string): number | null => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const n = Number(trimmed);
+  return Number.isFinite(n) ? n : null;
+};
 
 interface Props {
   open: boolean;
@@ -44,110 +131,31 @@ export default function AddVesselDialog({
   const [regions, setRegions] = useState<
     { id_reg: number; name: string | null }[]
   >([]);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
+  const openRef = useRef(open);
+  openRef.current = open;
 
-  const [form, setForm] = useState<{
-    // Identitas
-    asset_name: string;
-    id_terminal: string;
-    mmsi: string;
-    imo: string;
-    call_sign: string;
-    type: string;
-    id_company: number | null;
-    cabang: string;
+  const [form, setForm] = useState<FormState>(initialForm);
 
-    // Dimensions
-    loa: number | null;
-    lbp: number | null;
-    depth: number | null;
-    breadth: number | null;
-    draft: number | null;
-    gt: number | null;
-    build_year: "";
-
-    // Mesin
-    merek_engine: string;
-    engine_type: string;
-    engine_hp: string;
-    aux_engine_merek: string;
-    aux_engine_type: string;
-    aux_engine_hp: string;
-
-    // Sertifikat
-    no_sertifikat: string;
-    tgl_terbit: string;
-    tgl_expired: string;
-    statussmc: string;
-    tahapan_verifikasi: string;
-
-    // Perangkat
-    ssb: number | null;
-    vhf: number | null;
-    epirb: number | null;
-    sar: number | null;
-    vms: number | null;
-    fuel_censor: number | null;
-    telp_sat: number | null;
-
-    // Other
-    passenger: number | null;
-    car: number | null;
-    note: string;
-    image: File | null;
-  }>({
-    // Identitas
-    asset_name: "",
-    id_terminal: "",
-    mmsi: "",
-    imo: "",
-    call_sign: "",
-    type: "",
-    id_company: null,
-    cabang: "",
-
-    // Dimensions
-    loa: null,
-    lbp: null,
-    depth: null,
-    breadth: null,
-    draft: null,
-    gt: null,
-    build_year: "",
-
-    // Mesin
-    merek_engine: "",
-    engine_type: "",
-    engine_hp: "",
-    aux_engine_merek: "",
-    aux_engine_type: "",
-    aux_engine_hp: "",
-
-    // Sertifikat
-    no_sertifikat: "",
-    tgl_terbit: "",
-    tgl_expired: "",
-    statussmc: "",
-    tahapan_verifikasi: "",
-
-    // Perangkat
-    ssb: null,
-    vhf: null,
-    epirb: null,
-    sar: null,
-    vms: null,
-    fuel_censor: null,
-    telp_sat: null,
-
-    // Other
-    passenger: null,
-    car: null,
-    note: "",
-    image: null,
-  });
-
-  const handleChange = (key: string, value: any) => {
+  const handleChange = <K extends keyof FormState>(
+    key: K,
+    value: FormState[K],
+  ) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
+
+  const stepItems = useMemo(
+    () => [
+      "Identitas",
+      "Dimensions",
+      "Mesin",
+      "Sertifikat",
+      "Perangkat",
+      "Other",
+    ],
+    [],
+  );
 
   const nextStep = () => {
     if (step === 1 && !form.asset_name.trim()) return;
@@ -158,70 +166,79 @@ export default function AddVesselDialog({
     setStep((prev) => prev - 1);
   };
 
+  const resetAll = () => {
+    if (previewUrlRef.current) {
+      try {
+        URL.revokeObjectURL(previewUrlRef.current);
+      } catch {}
+      previewUrlRef.current = null;
+    }
+    setImagePreview(null);
+
+    setForm(initialForm);
+
+    setStep(1);
+  };
+
   const handleSubmit = async () => {
     try {
+      if (loading) return;
+      if (!form.asset_name.trim()) {
+        toast.error("Vessel Name wajib diisi");
+        setStep(1);
+        return;
+      }
       setLoading(true);
 
       await createAssetsApiAssetsPost({
         body: {
-          ...form,
+          asset_name: form.asset_name,
+          id_terminal: form.id_terminal || null,
+          mmsi: form.mmsi || null,
+          imo: form.imo || null,
+          call_sign: form.call_sign || null,
+          type: form.type || null,
+          id_company: form.id_company,
+          image: form.image,
+          loa: form.loa,
+          lbp: form.lbp,
+          depth: form.depth,
+          breadth: form.breadth,
+          draft: form.draft,
+          gt: form.gt,
+          build_year: form.build_year || null,
+          merek_engine: form.merek_engine || null,
+          engine_type: form.engine_type || null,
+          engine_hp: form.engine_hp || null,
+          aux_engine_merek: form.aux_engine_merek || null,
+          aux_engine_type: form.aux_engine_type || null,
+          aux_engine_hp: form.aux_engine_hp || null,
+          passanger: form.passenger,
+          car: form.car,
+          note: form.note || null,
+          ssb: form.ssb,
+          vhf: form.vhf,
+          epirb: form.epirb,
+          sar: form.sar,
+          vms: form.vms,
+          fuel_censor: form.fuel_censor,
+          telp_sat: form.telp_sat,
+          cabang: form.cabang,
+          no_sertifikat: form.no_sertifikat || null,
+          tgl_terbit: form.tgl_terbit || null,
+          tgl_expired: form.tgl_expired || null,
+          statussmc: form.statussmc || null,
+          tahapan_verifikasi: form.tahapan_verifikasi || null,
         },
       });
 
       onSuccess();
       toast.success("Asset berhasil ditambahkan");
+      resetAll();
       onOpenChange(false);
-
-      // reset form & step
-      setForm({
-        // Identitas
-        asset_name: "",
-        id_terminal: "",
-        mmsi: "",
-        imo: "",
-        call_sign: "",
-        type: "",
-        id_company: null,
-        cabang: "",
-        // Dimensions
-        loa: null,
-        lbp: null,
-        depth: null,
-        breadth: null,
-        draft: null,
-        gt: null,
-        build_year: "",
-        // Mesin
-        merek_engine: "",
-        engine_type: "",
-        engine_hp: "",
-        aux_engine_merek: "",
-        aux_engine_type: "",
-        aux_engine_hp: "",
-        // Sertifikat
-        no_sertifikat: "",
-        tgl_terbit: "",
-        tgl_expired: "",
-        statussmc: "",
-        tahapan_verifikasi: "",
-        // Perangkat
-        ssb: null,
-        vhf: null,
-        epirb: null,
-        sar: null,
-        vms: null,
-        fuel_censor: null,
-        telp_sat: null,
-        // Other
-        passenger: null,
-        car: null,
-        note: "",
-        image: null,
-      });
-
-      setStep(1);
     } catch (error) {
       console.error("Create vessel failed:", error);
+      toast.error("Gagal menambahkan asset");
     } finally {
       setLoading(false);
     }
@@ -229,104 +246,101 @@ export default function AddVesselDialog({
 
   useEffect(() => {
     if (!open) return;
+    let cancelled = false;
 
-    const fetchCompanies = async () => {
+    const fetchData = async () => {
       try {
-        const res = await getCompaniesAllApiListCompanyAllGet();
-        const api = res as any;
-        setCompanies(api.data?.data || []);
+        const [companiesRes, regionsRes] = await Promise.all([
+          getCompaniesAllApiListCompanyAllGet(),
+          getCabangByCompanyApiListCabangAllGet(),
+        ]);
+        if (cancelled || !openRef.current) return;
+        const companiesApi = companiesRes as any;
+        const regionsApi = regionsRes as any;
+        setCompanies(companiesApi.data?.data || []);
+        setRegions(regionsApi.data?.data || []);
       } catch (err) {
-        console.error("Failed to fetch companies:", err);
+        console.error("Failed to fetch add vessel dependencies:", err);
       }
     };
 
-    fetchCompanies();
+    fetchData();
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
-
-    const fetchRegions = async () => {
-      try {
-        const res = await getCabangByCompanyApiListCabangAllGet();
-        const api = res as any;
-        setRegions(api.data?.data || []);
-      } catch (err) {
-        console.error("Failed to fetch companies:", err);
+    return () => {
+      if (previewUrlRef.current) {
+        try {
+          URL.revokeObjectURL(previewUrlRef.current);
+        } catch {}
+        previewUrlRef.current = null;
       }
     };
+  }, []);
 
-    fetchRegions();
-  }, [open]);
+  const handleFileChange = (file: File | null) => {
+    handleChange("image", file);
+
+    if (file) {
+      if (previewUrlRef.current) {
+        try {
+          URL.revokeObjectURL(previewUrlRef.current);
+        } catch {}
+      }
+      const previewUrl = URL.createObjectURL(file);
+      previewUrlRef.current = previewUrl;
+      setImagePreview(previewUrl);
+    } else {
+      if (previewUrlRef.current) {
+        try {
+          URL.revokeObjectURL(previewUrlRef.current);
+        } catch {}
+        previewUrlRef.current = null;
+      }
+      setImagePreview(null);
+    }
+  };
 
   return (
     <Dialog
       open={open}
       onOpenChange={(val) => {
         onOpenChange(val);
-        if (!val) setStep(1);
+        if (!val) resetAll();
       }}
     >
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent
+        className="sm:max-w-3xl"
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Add Vessel</DialogTitle>
         </DialogHeader>
 
         {/* STEP INDICATOR */}
         <div className="flex items-center justify-center gap-4 mb-4">
-          <div
-            className={clsx(
-              "text-sm font-medium",
-              step === 1 ? "text-primary" : "text-muted-foreground",
-            )}
-          >
-            1. Identitas
-          </div>
-          <div className="w-8 h-[1px] bg-border" />
-          <div
-            className={clsx(
-              "text-sm font-medium",
-              step === 2 ? "text-primary" : "text-muted-foreground",
-            )}
-          >
-            2. Dimensions
-          </div>
-          <div className="w-8 h-[1px] bg-border" />
-          <div
-            className={clsx(
-              "text-sm font-medium",
-              step === 3 ? "text-primary" : "text-muted-foreground",
-            )}
-          >
-            3. Mesin
-          </div>
-          <div className="w-8 h-[1px] bg-border" />
-          <div
-            className={clsx(
-              "text-sm font-medium",
-              step === 4 ? "text-primary" : "text-muted-foreground",
-            )}
-          >
-            4. Sertifikat
-          </div>
-          <div className="w-8 h-[1px] bg-border" />
-          <div
-            className={clsx(
-              "text-sm font-medium",
-              step === 5 ? "text-primary" : "text-muted-foreground",
-            )}
-          >
-            5. Perangkat
-          </div>
-          <div className="w-8 h-[1px] bg-border" />
-          <div
-            className={clsx(
-              "text-sm font-medium",
-              step === 6 ? "text-primary" : "text-muted-foreground",
-            )}
-          >
-            6. Other
-          </div>
+          {stepItems.map((label, idx) => {
+            const current = idx + 1;
+            return (
+              <div key={label} className="flex items-center gap-4">
+                <div
+                  className={clsx(
+                    "text-sm font-medium",
+                    step === current ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
+                  {label}
+                </div>
+                {current < stepItems.length && (
+                  <div className="w-8 h-[1px] bg-border" />
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* STEP CONTENT */}
@@ -420,9 +434,7 @@ export default function AddVesselDialog({
                 <Label className="text-xs">Cabang</Label>
                 <Select
                   value={form.cabang !== null ? String(form.cabang) : ""}
-                  onValueChange={(value) =>
-                    handleChange("cabang", Number(value))
-                  }
+                  onValueChange={(value) => handleChange("cabang", value)}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select Cabang" />
@@ -452,7 +464,9 @@ export default function AddVesselDialog({
                 <Input
                   placeholder="LOA"
                   value={form.loa ?? ""}
-                  onChange={(e) => handleChange("loa", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("loa", parseNumberOrNull(e.target.value))
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -460,7 +474,9 @@ export default function AddVesselDialog({
                 <Input
                   placeholder="LBP"
                   value={form.lbp ?? ""}
-                  onChange={(e) => handleChange("lbp", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("lbp", parseNumberOrNull(e.target.value))
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -468,7 +484,9 @@ export default function AddVesselDialog({
                 <Input
                   placeholder="Depth"
                   value={form.depth ?? ""}
-                  onChange={(e) => handleChange("depth", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("depth", parseNumberOrNull(e.target.value))
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -476,7 +494,9 @@ export default function AddVesselDialog({
                 <Input
                   placeholder="Breadth"
                   value={form.breadth ?? ""}
-                  onChange={(e) => handleChange("breadth", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("breadth", parseNumberOrNull(e.target.value))
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -484,7 +504,9 @@ export default function AddVesselDialog({
                 <Input
                   placeholder="Draft"
                   value={form.draft ?? ""}
-                  onChange={(e) => handleChange("draft", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("draft", parseNumberOrNull(e.target.value))
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -492,7 +514,9 @@ export default function AddVesselDialog({
                 <Input
                   placeholder="GT"
                   value={form.gt ?? ""}
-                  onChange={(e) => handleChange("gt", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("gt", parseNumberOrNull(e.target.value))
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -622,7 +646,9 @@ export default function AddVesselDialog({
                 <Input
                   placeholder="SSB"
                   value={form.ssb ?? ""}
-                  onChange={(e) => handleChange("ssb", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("ssb", parseNumberOrNull(e.target.value))
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -630,7 +656,9 @@ export default function AddVesselDialog({
                 <Input
                   placeholder="VHF"
                   value={form.vhf ?? ""}
-                  onChange={(e) => handleChange("vhf", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("vhf", parseNumberOrNull(e.target.value))
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -638,7 +666,9 @@ export default function AddVesselDialog({
                 <Input
                   placeholder="EPIRB"
                   value={form.epirb ?? ""}
-                  onChange={(e) => handleChange("epirb", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("epirb", parseNumberOrNull(e.target.value))
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -646,7 +676,9 @@ export default function AddVesselDialog({
                 <Input
                   placeholder="SAR"
                   value={form.sar ?? ""}
-                  onChange={(e) => handleChange("sar", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("sar", parseNumberOrNull(e.target.value))
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -654,7 +686,9 @@ export default function AddVesselDialog({
                 <Input
                   placeholder="VMS"
                   value={form.vms ?? ""}
-                  onChange={(e) => handleChange("vms", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("vms", parseNumberOrNull(e.target.value))
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -662,7 +696,12 @@ export default function AddVesselDialog({
                 <Input
                   placeholder="Fuel Censor"
                   value={form.fuel_censor ?? ""}
-                  onChange={(e) => handleChange("fuel_censor", e.target.value)}
+                  onChange={(e) =>
+                    handleChange(
+                      "fuel_censor",
+                      parseNumberOrNull(e.target.value),
+                    )
+                  }
                 />
               </div>
               <div className="space-y-1">
@@ -670,7 +709,9 @@ export default function AddVesselDialog({
                 <Input
                   placeholder="Telp Sat"
                   value={form.telp_sat ?? ""}
-                  onChange={(e) => handleChange("telp_sat", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("telp_sat", parseNumberOrNull(e.target.value))
+                  }
                 />
               </div>
             </div>
@@ -678,26 +719,36 @@ export default function AddVesselDialog({
 
           {/* OTHER */}
           {step === 6 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label className="text-xs">Passengers</Label>
-                <Input
-                  placeholder="Passengers"
-                  value={form.passenger ?? ""}
-                  onChange={(e) => handleChange("passenger", e.target.value)}
-                />
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs">Passengers</Label>
+                  <Input
+                    placeholder="Passengers"
+                    value={form.passenger ?? ""}
+                    onChange={(e) =>
+                      handleChange(
+                        "passenger",
+                        parseNumberOrNull(e.target.value),
+                      )
+                    }
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Cars</Label>
+                  <Input
+                    placeholder="Cars"
+                    value={form.car ?? ""}
+                    onChange={(e) =>
+                      handleChange("car", parseNumberOrNull(e.target.value))
+                    }
+                  />
+                </div>
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Cars</Label>
-                <Input
-                  placeholder="Cars"
-                  value={form.car ?? ""}
-                  onChange={(e) => handleChange("car", e.target.value)}
-                />
-              </div>
+
               <div className="space-y-1">
                 <Label className="text-xs">Note</Label>
-                <Input
+                <Textarea
                   placeholder="Note"
                   value={form.note}
                   onChange={(e) => handleChange("note", e.target.value)}
@@ -705,17 +756,26 @@ export default function AddVesselDialog({
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Image</Label>
+
                 <Input
-                  placeholder="Image"
-                  value={
-                    form.image && typeof form.image === "string"
-                      ? form.image
-                      : ""
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    handleFileChange(e.target.files ? e.target.files[0] : null)
                   }
-                  onChange={(e) => handleChange("image", e.target.value)}
                 />
+
+                {imagePreview && (
+                  <div className="mt-2">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full max-h-48 object-contain rounded-md border"
+                    />
+                  </div>
+                )}
               </div>
-            </div>
+            </>
           )}
         </div>
 
@@ -730,7 +790,10 @@ export default function AddVesselDialog({
           )}
 
           {step < 6 ? (
-            <Button onClick={nextStep} disabled={!form.asset_name.trim()}>
+            <Button
+              onClick={nextStep}
+              disabled={step === 1 && !form.asset_name.trim()}
+            >
               Next
             </Button>
           ) : (

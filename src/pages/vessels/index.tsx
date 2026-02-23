@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import AddVesselDialog from "./components/AddVesselDialog";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface Vessel {
@@ -66,6 +67,7 @@ function VesselsPage() {
   const [deleting, setDeleting] = useState(false);
 
   const [openAdd, setOpenAdd] = useState(false);
+  const navigate = useNavigate();
 
   const fetchVessels = async () => {
     try {
@@ -229,11 +231,19 @@ function VesselsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
                         <DropdownMenuGroup>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              navigate(`/vessels-data/${dv.id_vessel}/detail`)
+                            }
+                          >
                             <ReceiptText className="w-4 h-4 mr-2" />
                             Detail
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              navigate(`/vessels-data/${dv.id_vessel}/edit`)
+                            }
+                          >
                             <PencilIcon className="w-4 h-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
@@ -348,7 +358,13 @@ function VesselsPage() {
                                   <ReceiptText className="w-4 h-4 mr-2" />
                                   Detail
                                 </DropdownMenuItem>
-                                <DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    navigate(
+                                      `/vessels-data/${dv.id_vessel}/edit`,
+                                    )
+                                  }
+                                >
                                   <PencilIcon className="w-4 h-4 mr-2" />
                                   Edit
                                 </DropdownMenuItem>
