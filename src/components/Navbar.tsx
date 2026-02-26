@@ -1,7 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { Menu, X, LogOut } from "lucide-react";
+import { Menu, X, LogOut, ChevronDown } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 import { logoutApiLogoutPost } from "@/api/base/sdk.gen";
 
@@ -19,6 +25,9 @@ function Navbar() {
   const location = useLocation();
   const isMapTrackingActive =
     location.pathname === "/" || location.pathname === "/map-tracking";
+  const isRouteIdActive = location.pathname.startsWith("/route-id");
+  const isRouteSetupActive = location.pathname === "/route-id/setup";
+  const isRouteDatalogActive = location.pathname === "/route-id/datalog";
 
   const now = new Date();
   const dateTime = now.toLocaleString("id-ID", {
@@ -46,17 +55,6 @@ function Navbar() {
       window.location.replace("/login");
     }
   };
-
-  // const handleLogout = async () => {
-  //   try {
-  //     await logoutApiLogoutPost();
-  //   } catch (error) {
-  //     console.error("Logout API error:", error);
-  //   } finally {
-  //     localStorage.clear();
-  //     navigate("/login", { replace: true });
-  //   }
-  // };
 
   // close dropdown when click outside
   useEffect(() => {
@@ -114,9 +112,40 @@ function Navbar() {
           <NavLink to="/vessels-data" className={menuClass}>
             <span className="font-semibold text-md">Vessels Data</span>
           </NavLink>
-          <NavLink to="/route-id" className={menuClass}>
-            <span className="font-semibold text-md">Route ID</span>
-          </NavLink>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={menuClass({ isActive: isRouteIdActive })}
+                type="button"
+              >
+                <span className="font-semibold text-md inline-flex items-center gap-1">
+                  Route ID
+                  <ChevronDown className="h-4 w-4" />
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40">
+              <DropdownMenuItem asChild>
+                <NavLink
+                  to="/route-id/setup"
+                  className="w-full flex items-center justify-between"
+                >
+                  <span>Setup</span>
+                  {isRouteSetupActive && <span aria-hidden>✓</span>}
+                </NavLink>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <NavLink
+                  to="/route-id/datalog"
+                  className="w-full flex items-center justify-between"
+                >
+                  <span>Datalog</span>
+                  {isRouteDatalogActive && <span aria-hidden>✓</span>}
+                </NavLink>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -171,12 +200,23 @@ function Navbar() {
           >
             Vessels Data
           </NavLink>
+
+          <div className="px-2 pt-2 text-xs font-semibold text-muted-foreground">
+            Route ID
+          </div>
           <NavLink
-            to="/route-id"
+            to="/route-id/setup"
             className={menuClass}
             onClick={() => setOpen(false)}
           >
-            Route ID
+            Setup
+          </NavLink>
+          <NavLink
+            to="/route-id/datalog"
+            className={menuClass}
+            onClick={() => setOpen(false)}
+          >
+            Datalog
           </NavLink>
 
           <div className="my-2 border-t" />

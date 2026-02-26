@@ -2,6 +2,7 @@ import GaugeComponent from "@/components/GaugeComponent";
 import LineComponent from "@/components/LineComponent";
 import MatrixHeatmap from "@/components/MatrixHeatmap";
 import { Card } from "@/components/ui/card";
+import LogsDataTable from "./LogsDataTable";
 
 export default function OverviewTabs() {
   return (
@@ -45,12 +46,7 @@ export default function OverviewTabs() {
       </div>
       <div className="p-2 space-y-2">
         <div className="font-semibold text-sm">TABLE LOGS</div>
-        <div>
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Modi quae
-          itaque nihil natus mollitia culpa hic, omnis quos? Ipsa itaque placeat
-          dolorem culpa, perspiciatis voluptate. Error doloribus maiores quas
-          velit!
-        </div>
+        <LogsDataTable />
       </div>
     </div>
   );

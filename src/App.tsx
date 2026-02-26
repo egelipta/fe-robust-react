@@ -58,7 +58,9 @@ function LayoutApp() {
               path="/vessels-data/:id/detail"
               element={<DetailVesselPage />}
             />
-            <Route path="/route-id" element={<RouteIdPage />} />
+            <Route path="/route-id" element={<Navigate to="/route-id/setup" replace />} />
+            <Route path="/route-id/setup" element={<RouteIdPage />} />
+            <Route path="/route-id/datalog" element={<RouteIdPage />} />
             <Route path="*" element={<Navigate to="/map-tracking" replace />} />
           </Routes>
         )}
