@@ -221,8 +221,11 @@ export default function MatrixHeatmap() {
     chartInstance.current.resize();
   }, [isDark, matrixData, yData]);
 
+  console.log(matrixData);
+  console.log(yData);
+
   return (
-    <div className="w-full h-[500px]">
+    <div className="w-full h-[300px]">
       <div ref={chartRef} className="w-full h-full" />
     </div>
   );

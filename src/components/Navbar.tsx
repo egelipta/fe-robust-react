@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Menu, X, LogOut } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 
 import { logoutApiLogoutPost } from "@/api/base/sdk.gen";
@@ -16,6 +16,9 @@ const menuClass = ({ isActive }: { isActive: boolean }) =>
 function Navbar() {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const isMapTrackingActive =
+    location.pathname === "/" || location.pathname === "/map-tracking";
 
   const now = new Date();
   const dateTime = now.toLocaleString("id-ID", {
@@ -102,7 +105,10 @@ function Navbar() {
 
         {/* DESKTOP MENU */}
         <div className="hidden md:flex items-center gap-1">
-          <NavLink to="/map-tracking" className={menuClass}>
+          <NavLink
+            to="/map-tracking"
+            className={() => menuClass({ isActive: isMapTrackingActive })}
+          >
             <span className="font-semibold text-md">Map Tracking</span>
           </NavLink>
           <NavLink to="/vessels-data" className={menuClass}>
@@ -153,7 +159,7 @@ function Navbar() {
         >
           <NavLink
             to="/map-tracking"
-            className={menuClass}
+            className={() => menuClass({ isActive: isMapTrackingActive })}
             onClick={() => setOpen(false)}
           >
             Map Tracking

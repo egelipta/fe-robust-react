@@ -221,3 +221,27 @@ body,
 .leaflet-popup-content {
   margin: 0 !important;
 }
+
+/* Hide Windy branding/attribution outside map route to avoid flash on other pages */
+body:not(.map-tracking-active) .leaflet-control-attribution a[href*="windy.com"],
+body:not(.map-tracking-active) a[href*="windy.com/map"],
+body:not(.map-tracking-active) .leaflet-control-windy,
+body:not(.map-tracking-active) .windy-logo,
+body:not(.map-tracking-active) .windy-attribution {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Fallback: aggressively hide any Windy-generated DOM outside map route */
+body:not(.map-tracking-active) a[href*="windy"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+body:not(.map-tracking-active) [class*="windy"],
+body:not(.map-tracking-active) [id*="windy"] {
+  visibility: hidden !important;
+  opacity: 0 !important;
+}

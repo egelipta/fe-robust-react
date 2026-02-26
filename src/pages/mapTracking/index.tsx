@@ -22,7 +22,11 @@ interface MarkerData {
   heading: number;
 }
 
-export default function MapTrackingPage() {
+type MapTrackingPageProps = {
+  isActive?: boolean;
+};
+
+export default function MapTrackingPage({ isActive = true }: MapTrackingPageProps) {
   const initialized = useRef(false);
   const windyRef = useRef<any | null>(null);
   const activeMarkerRef = useRef<any | null>(null);
@@ -34,6 +38,7 @@ export default function MapTrackingPage() {
   const invalidateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const initSeqRef = useRef(0);
   const [selectedShip, setSelectedShip] = useState<MarkerData | null>(null);
 
   const [openPanel, setOpenPanel] = useState<
@@ -75,6 +80,9 @@ export default function MapTrackingPage() {
   useEffect(() => {
     if (!window.windyInit || initialized.current) return;
 
+    const initSeq = ++initSeqRef.current;
+    let disposed = false;
+
     const container = document.getElementById("windy");
     if (container) container.innerHTML = "";
 
@@ -93,6 +101,13 @@ export default function MapTrackingPage() {
         zoom: 5,
       },
       async (windyAPI: any) => {
+        if (disposed || initSeq !== initSeqRef.current) {
+          try {
+            windyAPI?.map?.remove?.();
+          } catch {}
+          return;
+        }
+
         const { map } = windyAPI;
         windyRef.current = windyAPI;
 
@@ -166,7 +181,12 @@ export default function MapTrackingPage() {
             console.error("Failed to fetch vessels:", e);
           }
 
-          if (requestSeq !== markersRequestSeqRef.current) return;
+          if (
+            disposed ||
+            initSeq !== initSeqRef.current ||
+            requestSeq !== markersRequestSeqRef.current
+          )
+            return;
 
           items.forEach((v: any, idx: number) => {
             const lat = v.lat ?? v.latitude ?? null;
@@ -230,6 +250,7 @@ export default function MapTrackingPage() {
 
         reloadMarkersRef.current = loadMarkers;
         await loadMarkers({ status: statusFilterRef.current });
+        if (disposed || initSeq !== initSeqRef.current) return;
         map.invalidateSize(true);
         if (invalidateTimeoutRef.current)
           clearTimeout(invalidateTimeoutRef.current);
@@ -241,7 +262,12 @@ export default function MapTrackingPage() {
     );
 
     return () => {
+      disposed = true;
+      if (initSeq === initSeqRef.current) initSeqRef.current += 1;
       initialized.current = false;
+      markersRequestSeqRef.current += 1;
+      reloadMarkersRef.current = null;
+      activeMarkerRef.current = null;
       if (invalidateTimeoutRef.current) {
         clearTimeout(invalidateTimeoutRef.current);
         invalidateTimeoutRef.current = null;
@@ -270,6 +296,29 @@ export default function MapTrackingPage() {
     if (!initialized.current) return;
     reloadMarkersRef.current?.({ status: statusFilter });
   }, [statusFilter]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    const map = windyRef.current?.map;
+    if (!map) return;
+
+    map.invalidateSize(true);
+    const t1 = setTimeout(() => {
+      try {
+        map.invalidateSize(true);
+      } catch {}
+    }, 120);
+    const t2 = setTimeout(() => {
+      try {
+        map.invalidateSize(true);
+      } catch {}
+    }, 320);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [isActive]);
 
   return (
     <div className="relative h-full w-full flex flex-col">

@@ -5,6 +5,7 @@ import {
   useLocation,
   Navigate,
 } from "react-router-dom";
+import { useLayoutEffect } from "react";
 import Navbar from "./components/Navbar";
 import MapTrackingPage from "./pages/mapTracking";
 import VesselsPage from "./pages/vessels";
@@ -24,15 +25,30 @@ function LayoutApp() {
   const showMap =
     location.pathname === "/map-tracking" || location.pathname === "/";
 
+  useLayoutEffect(() => {
+    const className = "map-tracking-active";
+    if (showMap) document.body.classList.add(className);
+    else document.body.classList.remove(className);
+
+    return () => {
+      document.body.classList.remove(className);
+    };
+  }, [showMap]);
+
   return (
     <div className="h-screen w-screen flex flex-col">
       <Navbar />
       <Toaster position="top-right" />
 
       <div className="flex-1 relative overflow-hidden">
-        {/* 🔥 Map tidak pernah unmount */}
-        <div className={showMap ? "block h-full" : "hidden"}>
-          <MapTrackingPage />
+        <div
+          className={
+            showMap
+              ? "h-full"
+              : "h-full absolute inset-0 invisible pointer-events-none"
+          }
+        >
+          <MapTrackingPage isActive={showMap} />
         </div>
 
         {!showMap && (
@@ -43,6 +59,7 @@ function LayoutApp() {
               element={<DetailVesselPage />}
             />
             <Route path="/route-id" element={<RouteIdPage />} />
+            <Route path="*" element={<Navigate to="/map-tracking" replace />} />
           </Routes>
         )}
       </div>
