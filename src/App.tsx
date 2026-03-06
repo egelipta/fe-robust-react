@@ -12,6 +12,7 @@ import VesselsPage from "./pages/vessels";
 import DetailVesselPage from "./pages/vessels/components/DetailVessel";
 import LoginPage from "./pages/Login";
 import RouteIdPage from "./pages/routeId";
+import UserManagementPage from "./pages/userManagement";
 import type { JSX } from "react";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -61,6 +62,7 @@ function LayoutApp() {
             <Route path="/route-id" element={<Navigate to="/route-id/setup" replace />} />
             <Route path="/route-id/setup" element={<RouteIdPage />} />
             <Route path="/route-id/datalog" element={<RouteIdPage />} />
+            <Route path="/user-management" element={<UserManagementPage />} />
             <Route path="*" element={<Navigate to="/map-tracking" replace />} />
           </Routes>
         )}

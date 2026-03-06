@@ -190,7 +190,7 @@ export default function AddVesselDialog({
       }
       setLoading(true);
 
-      await createAssetsApiAssetsPost({
+      const response = await createAssetsApiAssetsPost({
         body: {
           asset_name: form.asset_name,
           id_terminal: form.id_terminal || null,
@@ -232,8 +232,10 @@ export default function AddVesselDialog({
         },
       });
 
+      const data = response.data as any;
+
       onSuccess();
-      toast.success("Asset berhasil ditambahkan");
+      toast.success(data?.message);
       resetAll();
       onOpenChange(false);
     } catch (error) {

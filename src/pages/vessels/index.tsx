@@ -112,19 +112,22 @@ function VesselsPage() {
     try {
       setDeleting(true);
 
-      await deleteVesselApiVesselVesselIdDelete({
+      const response = await deleteVesselApiVesselVesselIdDelete({
         path: {
           vessel_id: deleteId,
         },
       });
-
+      const data = response.data as any;
       // Refresh data
       fetchVessels();
-      toast.success("Berhasil dihapus");
+
+      // Gunakan message dari backend
+      toast.success(data.message);
+
       // Close dialog
       setDeleteId(null);
     } catch (error) {
-      console.error("Delete vessel failed:", error);
+      toast.error(`${error}`);
     } finally {
       setDeleting(false);
     }

@@ -26,6 +26,7 @@ function Navbar() {
   const isMapTrackingActive =
     location.pathname === "/" || location.pathname === "/map-tracking";
   const isRouteIdActive = location.pathname.startsWith("/route-id");
+  const isUserManagementActive = location.pathname.startsWith("/user-management");
   const isRouteSetupActive = location.pathname === "/route-id/setup";
   const isRouteDatalogActive = location.pathname === "/route-id/datalog";
 
@@ -111,6 +112,12 @@ function Navbar() {
           </NavLink>
           <NavLink to="/vessels-data" className={menuClass}>
             <span className="font-semibold text-md">Vessels Data</span>
+          </NavLink>
+          <NavLink
+            to="/user-management"
+            className={() => menuClass({ isActive: isUserManagementActive })}
+          >
+            <span className="font-semibold text-md">User Management</span>
           </NavLink>
 
           <DropdownMenu>
@@ -199,6 +206,13 @@ function Navbar() {
             onClick={() => setOpen(false)}
           >
             Vessels Data
+          </NavLink>
+          <NavLink
+            to="/user-management"
+            className={() => menuClass({ isActive: isUserManagementActive })}
+            onClick={() => setOpen(false)}
+          >
+            User Management
           </NavLink>
 
           <div className="px-2 pt-2 text-xs font-semibold text-muted-foreground">
