@@ -88,7 +88,7 @@ export default function LoginPage() {
                 <Input
                   name="username"
                   type="text"
-                  placeholder="email@example.com"
+                  placeholder="Your username..."
                   required
                 />
               </div>
