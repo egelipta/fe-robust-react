@@ -16,18 +16,18 @@ export default function LoginPage() {
     {
       src: "/brand-green.png",
       alt: "Telematic Tracking",
-      title: "Track fleet in real-time",
+      title: "Easy, Secure, Reliable, Affordable",
       subtitle: "Monitor vessel movement and status from one dashboard.",
-      bgClass:
-        "bg-[radial-gradient(circle_at_20%_20%,#16a34a_0%,#166534_40%,#0f172a_100%)]",
+      // bgClass:
+      //   "bg-[radial-gradient(circle_at_20%_20%,#16a34a_0%,#166534_40%,#0f172a_100%)]",
     },
     {
       src: "/logo-green.png",
       alt: "Monitoring system",
-      title: "Operational visibility",
+      title: "RIS Teknologi Global. PT",
       subtitle: "Get route, asset, and user activity in one workflow.",
-      bgClass:
-        "bg-[radial-gradient(circle_at_80%_20%,#22c55e_0%,#15803d_45%,#052e16_100%)]",
+      // bgClass:
+      //   "bg-[radial-gradient(circle_at_80%_20%,#22c55e_0%,#15803d_45%,#052e16_100%)]",
     },
     {
       src: "/logo-white.png",

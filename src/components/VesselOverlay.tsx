@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { CalendarIcon, X } from "lucide-react";
 import { getVesselApiVesselVesselIdGet } from "@/api/base/sdk.gen";
 import { Button } from "./ui/button";
 import { Image } from "antd";
 import { ScrollArea } from "./ui/scroll-area";
-import { Input } from "./ui/input";
+import { Calendar } from "./ui/calendar";
+import { Field, FieldLabel } from "./ui/field";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { addDays, format } from "date-fns";
+import { type DateRange } from "react-day-picker";
+import { useNavigate } from "react-router-dom";
 
 type Props = {
   vesselId: number;
@@ -12,9 +17,31 @@ type Props = {
 };
 
 export default function VesselOverlay({ vesselId, onClose }: Props) {
+  const navigate = useNavigate();
   const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDark, setIsDark] = useState(
+    typeof document !== "undefined" &&
+      document.documentElement.classList.contains("dark"),
+  );
+  const [date, setDate] = useState<DateRange | undefined>({
+    from: addDays(new Date(), -1),
+    to: new Date(),
+  });
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const root = document.documentElement;
+    const syncTheme = () => setIsDark(root.classList.contains("dark"));
+
+    syncTheme();
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -50,9 +77,15 @@ export default function VesselOverlay({ vesselId, onClose }: Props) {
 
   // Only use API-fetched data (no fallback). While loading, `data` will be null.
   const dVessel = data ?? {};
+  const detailVesselId = Number(dVessel.id_vessel ?? dVessel.id ?? vesselId);
 
   const rawStatus = dVessel.status ?? null;
   void rawStatus;
+
+  const handleGoDetail = () => {
+    if (!Number.isFinite(detailVesselId)) return;
+    navigate(`/vessels-data/${detailVesselId}/detail`);
+  };
 
   return (
     <div className="bg-[var(--navbar)] p-3 shadow-md relative h-62">
@@ -167,7 +200,7 @@ export default function VesselOverlay({ vesselId, onClose }: Props) {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-[230px_1fr] gap-3">
                     <div>
                       <label className="font-semibold">AVERAGE</label>
                       <div>
@@ -185,7 +218,58 @@ export default function VesselOverlay({ vesselId, onClose }: Props) {
                         </div>
                       </div>
                     </div>
-                    <Input placeholder="Search here..." className="mt-2" />
+                    <div className="mt-2 flex min-w-0 items-end gap-2">
+                      <Field className="min-w-0 flex-1">
+                        <FieldLabel htmlFor="vessel-date-range">
+                          Date Range
+                        </FieldLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              id="vessel-date-range"
+                              className="w-full justify-start gap-2 px-2.5 font-normal"
+                            >
+                              <CalendarIcon />
+                              <span className="truncate">
+                                {date?.from ? (
+                                  date.to ? (
+                                    <>
+                                      {format(date.from, "LLL dd, y")} -{" "}
+                                      {format(date.to, "LLL dd, y")}
+                                    </>
+                                  ) : (
+                                    format(date.from, "LLL dd, y")
+                                  )
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                              </span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="range"
+                              defaultMonth={date?.from}
+                              selected={date}
+                              onSelect={setDate}
+                              numberOfMonths={2}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </Field>
+                      <Button
+                        onClick={handleGoDetail}
+                        className="shrink-0 gap-0.5"
+                      >
+                        <span>G</span>
+                        <img
+                          src={isDark ? "/logo-white.png" : "/logo-green.png"}
+                          alt="o"
+                          className="h-4 w-4 object-contain"
+                        />
+                      </Button>
+                    </div>
                   </div>
                   <div>
                     <div className="grid grid-cols-4 gap-3 font-semibold">
