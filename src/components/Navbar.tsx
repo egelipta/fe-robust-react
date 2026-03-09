@@ -21,12 +21,14 @@ const menuClass = ({ isActive }: { isActive: boolean }) =>
 
 function Navbar() {
   const [open, setOpen] = useState(false);
+  const [displayUsername, setDisplayUsername] = useState("Admin");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const isMapTrackingActive =
     location.pathname === "/" || location.pathname === "/map-tracking";
   const isRouteIdActive = location.pathname.startsWith("/route-id");
-  const isUserManagementActive = location.pathname.startsWith("/user-management");
+  const isUserManagementActive =
+    location.pathname.startsWith("/user-management");
   const isRouteSetupActive = location.pathname === "/route-id/setup";
   const isRouteDatalogActive = location.pathname === "/route-id/datalog";
 
@@ -69,6 +71,33 @@ function Navbar() {
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    try {
+      const authUserRaw = localStorage.getItem("auth_user");
+      if (authUserRaw) {
+        const authUser = JSON.parse(authUserRaw) as { username?: unknown };
+        if (
+          authUser &&
+          typeof authUser.username === "string" &&
+          authUser.username.trim()
+        ) {
+          setDisplayUsername(authUser.username.trim());
+          return;
+        }
+      }
+
+      const fallbackUsername = localStorage.getItem("username");
+      if (fallbackUsername && fallbackUsername.trim()) {
+        setDisplayUsername(fallbackUsername.trim());
+      }
+    } catch {
+      const fallbackUsername = localStorage.getItem("username");
+      if (fallbackUsername && fallbackUsername.trim()) {
+        setDisplayUsername(fallbackUsername.trim());
+      }
+    }
   }, []);
 
   return (
@@ -164,7 +193,7 @@ function Navbar() {
       {/* RIGHT */}
       <div className="flex items-center gap-3">
         <div className="hidden md:block text-right leading-tight">
-          <div className="font-semibold">Hi, Admin</div>
+          <div className="font-semibold">Hi, {displayUsername}</div>
           <div className="text-xs text-muted-foreground">{dateTime}</div>
         </div>
 
@@ -236,7 +265,7 @@ function Navbar() {
           <div className="my-2 border-t" />
 
           <div className="px-3 py-2 text-xs text-muted-foreground">
-            Hi, Admin
+            Hi, {displayUsername}
             <br />
             {dateTime}
           </div>
