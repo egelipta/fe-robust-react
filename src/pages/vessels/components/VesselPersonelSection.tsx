@@ -494,7 +494,7 @@ export default function VesselPersonelSection({
                           preview={false}
                           className="rounded-full object-cover"
                         />
-                        <div className="text-xs font-semibold uppercase tracking-wide truncate">
+                        <div className="font-bold uppercase tracking-wide truncate">
                           {item.title}
                         </div>
                       </div>
@@ -582,7 +582,9 @@ export default function VesselPersonelSection({
                 );
                 const fallbackAvatar = buildAvatarDataUrl(
                   getInitials(personelForm[section.nameKey] || section.title),
-                  pickAvatarBg(`${section.id}:${personelForm[section.nameKey]}`),
+                  pickAvatarBg(
+                    `${section.id}:${personelForm[section.nameKey]}`,
+                  ),
                 );
 
                 return (
