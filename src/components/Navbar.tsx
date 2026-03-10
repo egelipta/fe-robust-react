@@ -101,9 +101,9 @@ function Navbar() {
   }, []);
 
   return (
-    <nav className="relative w-full h-14 px-3 flex items-center justify-between bg-[var(--navbar)] sticky top-0 z-50">
+    <nav className="relative w-full px-3 py-2 flex items-start justify-between bg-[var(--navbar)] sticky top-0 z-50">
       {/* LEFT */}
-      <div className="flex items-center gap-6">
+      <div className="flex flex-col items-start gap-2">
         {/* Brand */}
         <div className="flex items-center gap-2 font-bold text-lg">
           {/* LIGHT */}
@@ -186,12 +186,12 @@ function Navbar() {
       </div>
 
       {/* CENTER TITLE */}
-      <div className="absolute left-1/2 -translate-x-1/2 hidden md:block text-lg font-semibold tracking-wide">
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 hidden md:block text-lg font-semibold tracking-wide">
         TELEMATIC TRACKING SERVICE
       </div>
 
       {/* RIGHT */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 pt-1">
         <div className="hidden md:block text-right leading-tight">
           <div className="font-semibold">Hi, {displayUsername}</div>
           <div className="text-xs text-muted-foreground">{dateTime}</div>
@@ -220,7 +220,7 @@ function Navbar() {
       {open && (
         <div
           ref={dropdownRef}
-          className="absolute right-3 top-14 w-56 rounded-lg border bg-background shadow-lg p-2 md:hidden space-y-1"
+          className="absolute right-3 top-full mt-2 w-56 rounded-lg border bg-background shadow-lg p-2 md:hidden space-y-1"
         >
           <NavLink
             to="/map-tracking"

@@ -264,9 +264,9 @@ export default function VesselOverlay({ vesselId, onClose }: Props) {
                       >
                         <span>G</span>
                         <img
-                          src={isDark ? "/logo-white.png" : "/logo-green.png"}
+                          src={isDark ? "/logo-white.png" : "/logo-white.png"}
                           alt="o"
-                          className="h-4 w-4 object-contain"
+                          className="h-3 w-3 object-contain"
                         />
                       </Button>
                     </div>

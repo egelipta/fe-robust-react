@@ -20,7 +20,7 @@ interface AssetDetail {
   vessel_name: string;
   imo?: string;
   mmsi?: string;
-  call_sign?: string;
+  callsign?: string;
   type?: string;
   class_?: string;
   country_id: string;
@@ -49,6 +49,12 @@ interface AssetDetail {
   masinis3?: string;
   sid_masinis3?: string;
   no_telp_masinis3?: string;
+
+  no_sertifikat?: string;
+  tgl_terbit?: string;
+  tgl_expired?: string;
+  statussmc?: string;
+  tahapan_verifikasi?: string;
 }
 
 export default function DetailVesselPage() {
@@ -90,7 +96,7 @@ export default function DetailVesselPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <Card className="p-2">
                 <div className="space-y-3">
-                  <div className="font-bold text-lg uppercase">
+                  <div className="font-bold text-[20px] uppercase">
                     {asset.vessel_name}
                   </div>
 
@@ -113,7 +119,7 @@ export default function DetailVesselPage() {
                       </div>
                       <div className="grid grid-cols-[120px_1fr] text-sm">
                         <span>Callsign</span>
-                        <span>{asset.call_sign ?? "-"}</span>
+                        <span>{asset.callsign ?? "-"}</span>
                       </div>
                       <div className="grid grid-cols-[120px_1fr] text-sm">
                         <span>Type</span>
@@ -149,6 +155,33 @@ export default function DetailVesselPage() {
                       <div className="grid grid-cols-[120px_1fr] text-sm">
                         <span>GT</span>
                         <span>{asset.gt ?? "-"}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t">
+                    <div className="font-bold mb-3 mt-3">
+                      Safety Management Sertificate (SMC)
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr]">
+                      <div className="grid grid-cols-[160px_1fr] text-sm">
+                        <span>No Sertifikat</span>
+                        <span>{asset.no_sertifikat ?? "-"}</span>
+                      </div>
+                      <div className="grid grid-cols-[160px_1fr] text-sm">
+                        <span>Tgl Terbit</span>
+                        <span>{asset.tgl_terbit ?? "-"}</span>
+                      </div>
+                      <div className="grid grid-cols-[160px_1fr] text-sm">
+                        <span>Tgl Expired</span>
+                        <span>{asset.tgl_expired ?? "-"}</span>
+                      </div>
+                      <div className="grid grid-cols-[160px_1fr] text-sm">
+                        <span>Status SMC</span>
+                        <span>{asset.statussmc ?? "-"}</span>
+                      </div>
+                      <div className="grid grid-cols-[160px_1fr] text-sm">
+                        <span>Tahapan Verifikasi</span>
+                        <span>{asset.tahapan_verifikasi ?? "-"}</span>
                       </div>
                     </div>
                   </div>

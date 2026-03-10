@@ -213,7 +213,7 @@ function VesselsPage() {
       </div>
 
       {/* CONTENT */}
-      <ScrollArea className="h-[calc(100vh-180px)]">
+      <ScrollArea className="h-[calc(100vh-200px)]">
         <div
           className={clsx(
             "px-3 gap-2",

@@ -182,7 +182,7 @@ export default function VesselPersonelSection({
       <Card className="p-2">
         <div className="space-y-3">
           <div className="flex justify-between">
-            <div className="font-bold text-lg">Personil Kapal</div>
+            <div className="font-bold text-[20px]">Personil Kapal</div>
             <Button size="sm" variant="ghost" onClick={handleOpenPersonelEdit}>
               <Pencil />
             </Button>
