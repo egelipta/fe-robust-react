@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Pencil } from "lucide-react";
+import { LayoutGrid, List, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { Image } from "antd";
 import { updateVesselPersonelApiVesselPersonelVesselIdPut } from "@/api/base/sdk.gen";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,6 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 export interface VesselPersonelData {
   nahkoda?: string;
@@ -110,6 +113,165 @@ type Props = {
   onUpdated: () => Promise<void> | void;
 };
 
+type PersonelViewMode = "grid" | "list";
+
+type PersonelRoleId =
+  | "nahkoda"
+  | "mualim1"
+  | "mualim2"
+  | "kkm"
+  | "masinis2"
+  | "masinis3";
+
+type PersonelItem = {
+  id: PersonelRoleId;
+  title: string;
+  name?: string;
+  sid?: string;
+  telp?: string;
+  imageUrl?: string;
+};
+
+const formatPersonelValue = (value?: string | null) => {
+  if (value == null) return "-";
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : "-";
+};
+
+const getInitials = (value?: string) => {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) return "?";
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  const a = parts[0]?.[0] ?? "?";
+  const b = parts.length > 1 ? parts[parts.length - 1]?.[0] : "";
+  return (a + b).toUpperCase();
+};
+
+const AVATAR_BG = [
+  "#0ea5e9",
+  "#22c55e",
+  "#f97316",
+  "#a855f7",
+  "#ef4444",
+  "#14b8a6",
+  "#eab308",
+  "#64748b",
+];
+
+const PERSONEL_PORTRAIT_IDS = [43, 12, 10, 65, 27, 88];
+
+const getRandomUserPortraitUrl = (index: number) =>
+  `https://randomuser.me/api/portraits/men/${PERSONEL_PORTRAIT_IDS[index % PERSONEL_PORTRAIT_IDS.length]}.jpg`;
+
+const pickAvatarBg = (seed: string) => {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  return AVATAR_BG[hash % AVATAR_BG.length];
+};
+
+const buildAvatarDataUrl = (text: string, bg: string) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><rect width="80" height="80" rx="40" fill="${bg}"/><text x="50%" y="52%" text-anchor="middle" dominant-baseline="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial" font-size="28" font-weight="700" fill="#ffffff">${text}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+};
+
+const getPersonelAvatarSrc = (item: PersonelItem) => {
+  if (item.imageUrl && item.imageUrl.trim().length) return item.imageUrl;
+  const initials = getInitials(item.name || item.title);
+  const bg = pickAvatarBg(`${item.id}:${item.name ?? ""}`);
+  return buildAvatarDataUrl(initials, bg);
+};
+
+const readFileAsDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+
+const PERSONEL_EDIT_SECTIONS: Array<{
+  id: PersonelRoleId;
+  title: string;
+  nameKey: keyof PersonelForm;
+  sidKey: keyof PersonelForm;
+  telpKey: keyof PersonelForm;
+  portraitIndex: number;
+}> = [
+  {
+    id: "nahkoda",
+    title: "Nahkoda",
+    nameKey: "nahkoda",
+    sidKey: "sid_nahkoda",
+    telpKey: "no_telp_nahkoda",
+    portraitIndex: 0,
+  },
+  {
+    id: "mualim1",
+    title: "Mualim I",
+    nameKey: "mualim1",
+    sidKey: "sid_mualim1",
+    telpKey: "no_telp_mualim1",
+    portraitIndex: 1,
+  },
+  {
+    id: "mualim2",
+    title: "Mualim II",
+    nameKey: "mualim2",
+    sidKey: "sid_mualim2",
+    telpKey: "no_telp_mualim2",
+    portraitIndex: 2,
+  },
+  {
+    id: "kkm",
+    title: "KKM",
+    nameKey: "kkm",
+    sidKey: "sid_kkm",
+    telpKey: "no_telp_kkm",
+    portraitIndex: 3,
+  },
+  {
+    id: "masinis2",
+    title: "Masinis II",
+    nameKey: "masinis2",
+    sidKey: "sid_masinis2",
+    telpKey: "no_telp_masinis2",
+    portraitIndex: 4,
+  },
+  {
+    id: "masinis3",
+    title: "Masinis III",
+    nameKey: "masinis3",
+    sidKey: "sid_masinis3",
+    telpKey: "no_telp_masinis3",
+    portraitIndex: 5,
+  },
+];
+
+function PersonelInfoRow({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string;
+  value?: string;
+  valueClassName?: string;
+}) {
+  const formatted = formatPersonelValue(value);
+  return (
+    <div className="grid grid-cols-[84px_1fr] gap-x-2 min-w-0">
+      <div className="text-muted-foreground">{label}</div>
+      <div
+        className={cn("min-w-0 truncate", valueClassName)}
+        title={formatted === "-" ? undefined : formatted}
+      >
+        {formatted}
+      </div>
+    </div>
+  );
+}
+
 export default function VesselPersonelSection({
   vesselId,
   asset,
@@ -117,8 +279,12 @@ export default function VesselPersonelSection({
 }: Props) {
   const [openPersonelDialog, setOpenPersonelDialog] = useState(false);
   const [savingPersonel, setSavingPersonel] = useState(false);
+  const [viewMode, setViewMode] = useState<PersonelViewMode>("grid");
   const [personelForm, setPersonelForm] =
     useState<PersonelForm>(initialPersonelForm);
+  const [personelPhotoOverrides, setPersonelPhotoOverrides] = useState<
+    Partial<Record<PersonelRoleId, string>>
+  >({});
 
   const handlePersonelFormChange = <K extends keyof PersonelForm>(
     key: K,
@@ -131,6 +297,42 @@ export default function VesselPersonelSection({
     setPersonelForm(mapAssetToPersonelForm(asset));
     setOpenPersonelDialog(true);
   };
+
+  const handlePersonelPhotoChange = async (
+    roleId: PersonelRoleId,
+    file?: File,
+  ) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("File harus berupa gambar");
+      return;
+    }
+    const maxBytes = 2 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      toast.error("Ukuran gambar maksimal 2MB");
+      return;
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      if (!dataUrl) throw new Error("Empty data url");
+      setPersonelPhotoOverrides((prev) => ({ ...prev, [roleId]: dataUrl }));
+    } catch (err) {
+      console.error("Failed to read personel photo:", err);
+      toast.error("Gagal memuat gambar");
+    }
+  };
+
+  const handleRemovePersonelPhoto = (roleId: PersonelRoleId) => {
+    setPersonelPhotoOverrides((prev) => {
+      const next = { ...prev };
+      delete next[roleId];
+      return next;
+    });
+  };
+
+  const getPersonelDisplayImageUrl = (roleId: PersonelRoleId, index: number) =>
+    personelPhotoOverrides[roleId] ?? getRandomUserPortraitUrl(index);
 
   const handleUpdatePersonel = async () => {
     if (savingPersonel) return;
@@ -177,125 +379,186 @@ export default function VesselPersonelSection({
     }
   };
 
+  const personelItems: PersonelItem[] = [
+    {
+      id: "nahkoda",
+      title: "Nahkoda",
+      name: asset.nahkoda,
+      sid: asset.sid_nahkoda,
+      telp: asset.no_telp_nahkoda,
+      imageUrl: getPersonelDisplayImageUrl("nahkoda", 0),
+    },
+    {
+      id: "mualim1",
+      title: "Mualim I",
+      name: asset.mualim1,
+      sid: asset.sid_mualim1,
+      telp: asset.no_telp_mualim1,
+      imageUrl: getPersonelDisplayImageUrl("mualim1", 1),
+    },
+    {
+      id: "mualim2",
+      title: "Mualim II",
+      name: asset.mualim2,
+      sid: asset.sid_mualim2,
+      telp: asset.no_telp_mualim2,
+      imageUrl: getPersonelDisplayImageUrl("mualim2", 2),
+    },
+    {
+      id: "kkm",
+      title: "KKM",
+      name: asset.kkm,
+      sid: asset.sid_kkm,
+      telp: asset.no_telp_kkm,
+      imageUrl: getPersonelDisplayImageUrl("kkm", 3),
+    },
+    {
+      id: "masinis2",
+      title: "Masinis II",
+      name: asset.masinis2,
+      sid: asset.sid_masinis2,
+      telp: asset.no_telp_masinis2,
+      imageUrl: getPersonelDisplayImageUrl("masinis2", 4),
+    },
+    {
+      id: "masinis3",
+      title: "Masinis III",
+      name: asset.masinis3,
+      sid: asset.sid_masinis3,
+      telp: asset.no_telp_masinis3,
+      imageUrl: getPersonelDisplayImageUrl("masinis3", 5),
+    },
+  ];
+
   return (
     <>
       <Card className="p-2">
         <div className="space-y-3">
-          <div className="flex justify-between">
+          <div className="flex items-center justify-between gap-2">
             <div className="font-bold text-[20px]">Personil Kapal</div>
-            <Button size="sm" variant="ghost" onClick={handleOpenPersonelEdit}>
-              <Pencil />
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <div className="p-2 border border-dashed space-y-2 rounded-lg">
-              <div>NAHKODA</div>
-              <div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>Name</div>
-                  <div>{asset.nahkoda || "-"}</div>
-                </div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>SID</div>
-                  <div>{asset.sid_nahkoda || "-"}</div>
-                </div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>Telp</div>
-                  <div>{asset.no_telp_nahkoda ?? "-"}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-2 border border-dashed space-y-2 rounded-lg">
-              <div>MUALIM I</div>
-              <div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>Name</div>
-                  <div>{asset.mualim1 || "-"}</div>
-                </div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>SID</div>
-                  <div>{asset.sid_mualim1 || "-"}</div>
-                </div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>Telp</div>
-                  <div>{asset.no_telp_mualim1 ?? "-"}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-2 border border-dashed space-y-2 rounded-lg">
-              <div>MUALIM II</div>
-              <div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>Name</div>
-                  <div>{asset.mualim2 || "-"}</div>
-                </div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>SID</div>
-                  <div>{asset.sid_mualim2 || "-"}</div>
-                </div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>Telp</div>
-                  <div>{asset.no_telp_mualim2 ?? "-"}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-2 border border-dashed space-y-2 rounded-lg">
-              <div>KKM</div>
-              <div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>Name</div>
-                  <div>{asset.kkm || "-"}</div>
-                </div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>SID</div>
-                  <div>{asset.sid_kkm || "-"}</div>
-                </div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>Telp</div>
-                  <div>{asset.no_telp_kkm ?? "-"}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-2 border border-dashed space-y-2 rounded-lg">
-              <div>MASINIS II</div>
-              <div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>Name</div>
-                  <div>{asset.masinis2 || "-"}</div>
-                </div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>SID</div>
-                  <div>{asset.sid_masinis2 || "-"}</div>
-                </div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>Telp</div>
-                  <div>{asset.no_telp_masinis2 ?? "-"}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-2 border border-dashed space-y-2 rounded-lg">
-              <div>MASINIS III</div>
-              <div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>Name</div>
-                  <div>{asset.masinis3 || "-"}</div>
-                </div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>SID</div>
-                  <div>{asset.sid_masinis3 || "-"}</div>
-                </div>
-                <div className="grid grid-cols-[100px_1fr]">
-                  <div>Telp</div>
-                  <div>{asset.no_telp_masinis3 ?? "-"}</div>
-                </div>
-              </div>
+            <div className="flex items-center gap-1">
+              <Button
+                size="icon-sm"
+                variant={viewMode === "grid" ? "default" : "outline"}
+                onClick={() => setViewMode("grid")}
+                aria-pressed={viewMode === "grid"}
+                title="Tampilan grid"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant={viewMode === "list" ? "default" : "outline"}
+                onClick={() => setViewMode("list")}
+                aria-pressed={viewMode === "list"}
+                title="Tampilan list"
+              >
+                <List className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleOpenPersonelEdit}
+                title="Edit personil"
+              >
+                <Pencil />
+              </Button>
             </div>
           </div>
+          {(() => {
+            const content = (
+              <div
+                className={cn(
+                  "gap-2",
+                  viewMode === "grid"
+                    ? "grid grid-cols-1 md:grid-cols-3 items-stretch"
+                    : "flex flex-col",
+                )}
+              >
+                {personelItems.map((item) =>
+                  viewMode === "grid" ? (
+                    <div
+                      key={item.id}
+                      className="p-2 border border-dashed rounded-lg flex flex-col min-h-[124px] overflow-hidden"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Image
+                          src={getPersonelAvatarSrc(item)}
+                          alt={item.title}
+                          width={36}
+                          height={36}
+                          fallback={buildAvatarDataUrl(
+                            getInitials(item.name || item.title),
+                            pickAvatarBg(`${item.id}:${item.name ?? ""}`),
+                          )}
+                          preview={false}
+                          className="rounded-full object-cover"
+                        />
+                        <div className="text-xs font-semibold uppercase tracking-wide truncate">
+                          {item.title}
+                        </div>
+                      </div>
+                      <div className="mt-2 space-y-0 text-sm">
+                        <PersonelInfoRow label="Name" value={item.name} />
+                        <PersonelInfoRow label="SID" value={item.sid} />
+                        <PersonelInfoRow label="Telp" value={item.telp} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      key={item.id}
+                      className="p-2 border border-dashed rounded-lg min-h-[72px] flex items-center"
+                    >
+                      <div className="grid w-full grid-cols-1 md:grid-cols-[140px_1fr] gap-2 items-center min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Image
+                            src={getPersonelAvatarSrc(item)}
+                            alt={item.title}
+                            width={28}
+                            height={28}
+                            fallback={buildAvatarDataUrl(
+                              getInitials(item.name || item.title),
+                              pickAvatarBg(`${item.id}:${item.name ?? ""}`),
+                            )}
+                            preview={false}
+                            className="rounded-full object-cover"
+                          />
+                          <div className="text-sm font-semibold uppercase tracking-wide truncate">
+                            {item.title}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm min-w-0">
+                          <PersonelInfoRow
+                            label="Name"
+                            value={item.name}
+                            valueClassName="line-clamp-1"
+                          />
+                          <PersonelInfoRow
+                            label="SID"
+                            value={item.sid}
+                            valueClassName="line-clamp-1"
+                          />
+                          <PersonelInfoRow
+                            label="Telp"
+                            value={item.telp}
+                            valueClassName="line-clamp-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+            );
+
+            if (viewMode !== "list") return content;
+
+            return (
+              <ScrollArea className="h-[180px] sm:h-[220px] pr-1">
+                {content}
+              </ScrollArea>
+            );
+          })()}
         </div>
       </Card>
 
@@ -304,214 +567,129 @@ export default function VesselPersonelSection({
           <DialogHeader>
             <DialogTitle>Edit Personil Kapal</DialogTitle>
             <DialogDescription>
-              Ubah data personil lalu klik simpan.
+              Ubah data personil lalu klik simpan. Upload foto hanya untuk
+              tampilan lokal (belum tersimpan ke server).
             </DialogDescription>
           </DialogHeader>
 
-          <div className="max-h-[70vh] overflow-y-auto pr-1">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3 p-3 border rounded-lg">
-                <div className="font-semibold">Nahkoda</div>
-                <div className="space-y-2">
-                  <Label>Nama</Label>
-                  <Input
-                    value={personelForm.nahkoda}
-                    onChange={(e) =>
-                      handlePersonelFormChange("nahkoda", e.target.value)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>SID</Label>
-                  <Input
-                    value={personelForm.sid_nahkoda}
-                    onChange={(e) =>
-                      handlePersonelFormChange("sid_nahkoda", e.target.value)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>No. Telp</Label>
-                  <Input
-                    value={personelForm.no_telp_nahkoda}
-                    onChange={(e) =>
-                      handlePersonelFormChange(
-                        "no_telp_nahkoda",
-                        e.target.value,
-                      )
-                    }
-                  />
-                </div>
-              </div>
+          <ScrollArea className="max-h-[70vh] pr-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {PERSONEL_EDIT_SECTIONS.map((section) => {
+                const photoOverride = personelPhotoOverrides[section.id];
+                const imageUrl = getPersonelDisplayImageUrl(
+                  section.id,
+                  section.portraitIndex,
+                );
+                const fallbackAvatar = buildAvatarDataUrl(
+                  getInitials(personelForm[section.nameKey] || section.title),
+                  pickAvatarBg(`${section.id}:${personelForm[section.nameKey]}`),
+                );
 
-              <div className="space-y-3 p-3 border rounded-lg">
-                <div className="font-semibold">Mualim I</div>
-                <div className="space-y-2">
-                  <Label>Nama</Label>
-                  <Input
-                    value={personelForm.mualim1}
-                    onChange={(e) =>
-                      handlePersonelFormChange("mualim1", e.target.value)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>SID</Label>
-                  <Input
-                    value={personelForm.sid_mualim1}
-                    onChange={(e) =>
-                      handlePersonelFormChange("sid_mualim1", e.target.value)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>No. Telp</Label>
-                  <Input
-                    value={personelForm.no_telp_mualim1}
-                    onChange={(e) =>
-                      handlePersonelFormChange(
-                        "no_telp_mualim1",
-                        e.target.value,
-                      )
-                    }
-                  />
-                </div>
-              </div>
+                return (
+                  <div
+                    key={section.id}
+                    className="p-4 border rounded-xl bg-muted/10 space-y-4"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Image
+                          src={imageUrl}
+                          alt={section.title}
+                          width={48}
+                          height={48}
+                          preview={true}
+                          fallback={fallbackAvatar}
+                          className="rounded-full object-cover"
+                        />
+                        <div className="min-w-0">
+                          <div className="font-semibold truncate">
+                            {section.title}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            Foto bersifat lokal sementara.
+                          </div>
+                        </div>
+                      </div>
 
-              <div className="space-y-3 p-3 border rounded-lg">
-                <div className="font-semibold">Mualim II</div>
-                <div className="space-y-2">
-                  <Label>Nama</Label>
-                  <Input
-                    value={personelForm.mualim2}
-                    onChange={(e) =>
-                      handlePersonelFormChange("mualim2", e.target.value)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>SID</Label>
-                  <Input
-                    value={personelForm.sid_mualim2}
-                    onChange={(e) =>
-                      handlePersonelFormChange("sid_mualim2", e.target.value)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>No. Telp</Label>
-                  <Input
-                    value={personelForm.no_telp_mualim2}
-                    onChange={(e) =>
-                      handlePersonelFormChange(
-                        "no_telp_mualim2",
-                        e.target.value,
-                      )
-                    }
-                  />
-                </div>
-              </div>
+                      <div className="flex items-center gap-2">
+                        <Button asChild size="sm" variant="outline">
+                          <label
+                            htmlFor={`personel-photo-${section.id}`}
+                            className="cursor-pointer"
+                          >
+                            Upload
+                          </label>
+                        </Button>
+                        <input
+                          id={`personel-photo-${section.id}`}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            void handlePersonelPhotoChange(section.id, file);
+                            e.currentTarget.value = "";
+                          }}
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={!photoOverride}
+                          onClick={() => handleRemovePersonelPhoto(section.id)}
+                          title={
+                            photoOverride ? "Hapus foto" : "Belum ada foto"
+                          }
+                        >
+                          Hapus
+                        </Button>
+                      </div>
+                    </div>
 
-              <div className="space-y-3 p-3 border rounded-lg">
-                <div className="font-semibold">KKM</div>
-                <div className="space-y-2">
-                  <Label>Nama</Label>
-                  <Input
-                    value={personelForm.kkm}
-                    onChange={(e) =>
-                      handlePersonelFormChange("kkm", e.target.value)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>SID</Label>
-                  <Input
-                    value={personelForm.sid_kkm}
-                    onChange={(e) =>
-                      handlePersonelFormChange("sid_kkm", e.target.value)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>No. Telp</Label>
-                  <Input
-                    value={personelForm.no_telp_kkm}
-                    onChange={(e) =>
-                      handlePersonelFormChange("no_telp_kkm", e.target.value)
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3 p-3 border rounded-lg">
-                <div className="font-semibold">Masinis II</div>
-                <div className="space-y-2">
-                  <Label>Nama</Label>
-                  <Input
-                    value={personelForm.masinis2}
-                    onChange={(e) =>
-                      handlePersonelFormChange("masinis2", e.target.value)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>SID</Label>
-                  <Input
-                    value={personelForm.sid_masinis2}
-                    onChange={(e) =>
-                      handlePersonelFormChange("sid_masinis2", e.target.value)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>No. Telp</Label>
-                  <Input
-                    value={personelForm.no_telp_masinis2}
-                    onChange={(e) =>
-                      handlePersonelFormChange(
-                        "no_telp_masinis2",
-                        e.target.value,
-                      )
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3 p-3 border rounded-lg">
-                <div className="font-semibold">Masinis III</div>
-                <div className="space-y-2">
-                  <Label>Nama</Label>
-                  <Input
-                    value={personelForm.masinis3}
-                    onChange={(e) =>
-                      handlePersonelFormChange("masinis3", e.target.value)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>SID</Label>
-                  <Input
-                    value={personelForm.sid_masinis3}
-                    onChange={(e) =>
-                      handlePersonelFormChange("sid_masinis3", e.target.value)
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>No. Telp</Label>
-                  <Input
-                    value={personelForm.no_telp_masinis3}
-                    onChange={(e) =>
-                      handlePersonelFormChange(
-                        "no_telp_masinis3",
-                        e.target.value,
-                      )
-                    }
-                  />
-                </div>
-              </div>
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label>Nama</Label>
+                        <Input
+                          value={personelForm[section.nameKey]}
+                          onChange={(e) =>
+                            handlePersonelFormChange(
+                              section.nameKey,
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label>SID</Label>
+                          <Input
+                            value={personelForm[section.sidKey]}
+                            onChange={(e) =>
+                              handlePersonelFormChange(
+                                section.sidKey,
+                                e.target.value,
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>No. Telp</Label>
+                          <Input
+                            value={personelForm[section.telpKey]}
+                            onChange={(e) =>
+                              handlePersonelFormChange(
+                                section.telpKey,
+                                e.target.value,
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
+          </ScrollArea>
 
           <DialogFooter>
             <Button
