@@ -22,7 +22,6 @@ type Props = {
   onManageRole: (employee: EmployeeRecord) => void;
   onResetPassword: (employee: EmployeeRecord) => void;
   onToggleStatus: (employee: EmployeeRecord) => void;
-  onDelete: (employee: EmployeeRecord) => void;
   statusText: (value: number | null) => string;
 };
 
@@ -38,7 +37,6 @@ export default function UserTable({
   onManageRole,
   onResetPassword,
   onToggleStatus,
-  onDelete,
   statusText,
 }: Props) {
   return (
@@ -126,9 +124,6 @@ export default function UserTable({
                     disabled={!row.user_id}
                   >
                     Toggle Status
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => onDelete(row)}>
-                    Delete
                   </Button>
                 </div>
               </TableCell>

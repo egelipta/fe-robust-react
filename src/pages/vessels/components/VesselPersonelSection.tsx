@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LayoutGrid, List, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Image } from "antd";
-import { updateVesselPersonelApiVesselPersonelVesselIdPut } from "@/api/base/sdk.gen";
+import {
+  updatePersonnelPhotoApiVesselVesselIdPersonnelPhotoPut,
+  updateVesselPersonnelApiVesselVesselIdPersonnelPut,
+} from "@/api/base/sdk.gen";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -17,27 +20,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-
-export interface VesselPersonelData {
-  nahkoda?: string;
-  sid_nahkoda?: string;
-  no_telp_nahkoda?: string;
-  mualim1?: string;
-  sid_mualim1?: string;
-  no_telp_mualim1?: string;
-  mualim2?: string;
-  sid_mualim2?: string;
-  no_telp_mualim2?: string;
-  kkm?: string;
-  sid_kkm?: string;
-  no_telp_kkm?: string;
-  masinis2?: string;
-  sid_masinis2?: string;
-  no_telp_masinis2?: string;
-  masinis3?: string;
-  sid_masinis3?: string;
-  no_telp_masinis3?: string;
-}
 
 type PersonelForm = {
   nahkoda: string;
@@ -86,30 +68,9 @@ const normalizeNullable = (value: string) => {
   return trimmed.length ? trimmed : null;
 };
 
-const mapAssetToPersonelForm = (data: VesselPersonelData): PersonelForm => ({
-  nahkoda: data.nahkoda ?? "",
-  sid_nahkoda: data.sid_nahkoda ?? "",
-  sid_mualim1: data.sid_mualim1 ?? "",
-  sid_mualim2: data.sid_mualim2 ?? "",
-  mualim1: data.mualim1 ?? "",
-  mualim2: data.mualim2 ?? "",
-  kkm: data.kkm ?? "",
-  masinis2: data.masinis2 ?? "",
-  masinis3: data.masinis3 ?? "",
-  sid_kkm: data.sid_kkm ?? "",
-  sid_masinis2: data.sid_masinis2 ?? "",
-  sid_masinis3: data.sid_masinis3 ?? "",
-  no_telp_nahkoda: data.no_telp_nahkoda ?? "",
-  no_telp_mualim1: data.no_telp_mualim1 ?? "",
-  no_telp_mualim2: data.no_telp_mualim2 ?? "",
-  no_telp_kkm: data.no_telp_kkm ?? "",
-  no_telp_masinis2: data.no_telp_masinis2 ?? "",
-  no_telp_masinis3: data.no_telp_masinis3 ?? "",
-});
-
 type Props = {
   vesselId: number;
-  asset: VesselPersonelData;
+  personnel?: VesselPersonnelData | null;
   onUpdated: () => Promise<void> | void;
 };
 
@@ -122,6 +83,19 @@ type PersonelRoleId =
   | "kkm"
   | "masinis2"
   | "masinis3";
+
+type PersonnelMember = {
+  name: string | null;
+  sid: string | null;
+  phone: string | null;
+  photo_url: string | null;
+};
+
+export type VesselPersonnelData = {
+  vessel_id: number;
+  vessel_name: string;
+  personnel: Partial<Record<PersonelRoleId, PersonnelMember>>;
+};
 
 type PersonelItem = {
   id: PersonelRoleId;
@@ -158,11 +132,6 @@ const AVATAR_BG = [
   "#64748b",
 ];
 
-const PERSONEL_PORTRAIT_IDS = [43, 12, 10, 65, 27, 88];
-
-const getRandomUserPortraitUrl = (index: number) =>
-  `https://randomuser.me/api/portraits/men/${PERSONEL_PORTRAIT_IDS[index % PERSONEL_PORTRAIT_IDS.length]}.jpg`;
-
 const pickAvatarBg = (seed: string) => {
   let hash = 0;
   for (let i = 0; i < seed.length; i += 1) {
@@ -191,13 +160,34 @@ const readFileAsDataUrl = (file: File) =>
     reader.readAsDataURL(file);
   });
 
+type PersonelPhotoOverride = {
+  file: File;
+  previewUrl: string;
+};
+
+type PersonnelPhotoField =
+  | "photo_nahkoda"
+  | "photo_mualim1"
+  | "photo_mualim2"
+  | "photo_kkm"
+  | "photo_masinis2"
+  | "photo_masinis3";
+
+const ROLE_TO_PHOTO_KEY: Record<PersonelRoleId, PersonnelPhotoField> = {
+  nahkoda: "photo_nahkoda",
+  mualim1: "photo_mualim1",
+  mualim2: "photo_mualim2",
+  kkm: "photo_kkm",
+  masinis2: "photo_masinis2",
+  masinis3: "photo_masinis3",
+};
+
 const PERSONEL_EDIT_SECTIONS: Array<{
   id: PersonelRoleId;
   title: string;
   nameKey: keyof PersonelForm;
   sidKey: keyof PersonelForm;
   telpKey: keyof PersonelForm;
-  portraitIndex: number;
 }> = [
   {
     id: "nahkoda",
@@ -205,7 +195,6 @@ const PERSONEL_EDIT_SECTIONS: Array<{
     nameKey: "nahkoda",
     sidKey: "sid_nahkoda",
     telpKey: "no_telp_nahkoda",
-    portraitIndex: 0,
   },
   {
     id: "mualim1",
@@ -213,7 +202,6 @@ const PERSONEL_EDIT_SECTIONS: Array<{
     nameKey: "mualim1",
     sidKey: "sid_mualim1",
     telpKey: "no_telp_mualim1",
-    portraitIndex: 1,
   },
   {
     id: "mualim2",
@@ -221,7 +209,6 @@ const PERSONEL_EDIT_SECTIONS: Array<{
     nameKey: "mualim2",
     sidKey: "sid_mualim2",
     telpKey: "no_telp_mualim2",
-    portraitIndex: 2,
   },
   {
     id: "kkm",
@@ -229,7 +216,6 @@ const PERSONEL_EDIT_SECTIONS: Array<{
     nameKey: "kkm",
     sidKey: "sid_kkm",
     telpKey: "no_telp_kkm",
-    portraitIndex: 3,
   },
   {
     id: "masinis2",
@@ -237,7 +223,6 @@ const PERSONEL_EDIT_SECTIONS: Array<{
     nameKey: "masinis2",
     sidKey: "sid_masinis2",
     telpKey: "no_telp_masinis2",
-    portraitIndex: 4,
   },
   {
     id: "masinis3",
@@ -245,7 +230,6 @@ const PERSONEL_EDIT_SECTIONS: Array<{
     nameKey: "masinis3",
     sidKey: "sid_masinis3",
     telpKey: "no_telp_masinis3",
-    portraitIndex: 5,
   },
 ];
 
@@ -274,7 +258,7 @@ function PersonelInfoRow({
 
 export default function VesselPersonelSection({
   vesselId,
-  asset,
+  personnel,
   onUpdated,
 }: Props) {
   const [openPersonelDialog, setOpenPersonelDialog] = useState(false);
@@ -283,8 +267,34 @@ export default function VesselPersonelSection({
   const [personelForm, setPersonelForm] =
     useState<PersonelForm>(initialPersonelForm);
   const [personelPhotoOverrides, setPersonelPhotoOverrides] = useState<
-    Partial<Record<PersonelRoleId, string>>
+    Partial<Record<PersonelRoleId, PersonelPhotoOverride>>
   >({});
+
+  const photoOverridesRef = useRef(personelPhotoOverrides);
+  useEffect(() => {
+    photoOverridesRef.current = personelPhotoOverrides;
+  }, [personelPhotoOverrides]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(photoOverridesRef.current).forEach((override) => {
+        if (!override) return;
+        URL.revokeObjectURL(override.previewUrl);
+      });
+    };
+  }, []);
+
+  const memberByRole = useMemo(() => {
+    return (roleId: PersonelRoleId): PersonnelMember => {
+      const member = personnel?.personnel?.[roleId];
+      return {
+        name: member?.name ?? null,
+        sid: member?.sid ?? null,
+        phone: member?.phone ?? null,
+        photo_url: member?.photo_url ?? null,
+      };
+    };
+  }, [personnel]);
 
   const handlePersonelFormChange = <K extends keyof PersonelForm>(
     key: K,
@@ -294,7 +304,33 @@ export default function VesselPersonelSection({
   };
 
   const handleOpenPersonelEdit = () => {
-    setPersonelForm(mapAssetToPersonelForm(asset));
+    const nahkoda = memberByRole("nahkoda");
+    const mualim1 = memberByRole("mualim1");
+    const mualim2 = memberByRole("mualim2");
+    const kkm = memberByRole("kkm");
+    const masinis2 = memberByRole("masinis2");
+    const masinis3 = memberByRole("masinis3");
+
+    setPersonelForm({
+      nahkoda: nahkoda.name ?? "",
+      sid_nahkoda: nahkoda.sid ?? "",
+      no_telp_nahkoda: nahkoda.phone ?? "",
+      mualim1: mualim1.name ?? "",
+      sid_mualim1: mualim1.sid ?? "",
+      no_telp_mualim1: mualim1.phone ?? "",
+      mualim2: mualim2.name ?? "",
+      sid_mualim2: mualim2.sid ?? "",
+      no_telp_mualim2: mualim2.phone ?? "",
+      kkm: kkm.name ?? "",
+      sid_kkm: kkm.sid ?? "",
+      no_telp_kkm: kkm.phone ?? "",
+      masinis2: masinis2.name ?? "",
+      sid_masinis2: masinis2.sid ?? "",
+      no_telp_masinis2: masinis2.phone ?? "",
+      masinis3: masinis3.name ?? "",
+      sid_masinis3: masinis3.sid ?? "",
+      no_telp_masinis3: masinis3.phone ?? "",
+    });
     setOpenPersonelDialog(true);
   };
 
@@ -314,9 +350,13 @@ export default function VesselPersonelSection({
     }
 
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      if (!dataUrl) throw new Error("Empty data url");
-      setPersonelPhotoOverrides((prev) => ({ ...prev, [roleId]: dataUrl }));
+      await readFileAsDataUrl(file);
+      const previewUrl = URL.createObjectURL(file);
+      setPersonelPhotoOverrides((prev) => {
+        const current = prev[roleId];
+        if (current) URL.revokeObjectURL(current.previewUrl);
+        return { ...prev, [roleId]: { file, previewUrl } };
+      });
     } catch (err) {
       console.error("Failed to read personel photo:", err);
       toast.error("Gagal memuat gambar");
@@ -326,13 +366,20 @@ export default function VesselPersonelSection({
   const handleRemovePersonelPhoto = (roleId: PersonelRoleId) => {
     setPersonelPhotoOverrides((prev) => {
       const next = { ...prev };
+      const current = next[roleId];
+      if (current) URL.revokeObjectURL(current.previewUrl);
       delete next[roleId];
       return next;
     });
   };
 
-  const getPersonelDisplayImageUrl = (roleId: PersonelRoleId, index: number) =>
-    personelPhotoOverrides[roleId] ?? getRandomUserPortraitUrl(index);
+  const getPersonelDisplayImageUrl = (roleId: PersonelRoleId) => {
+    const override = personelPhotoOverrides[roleId];
+    if (override?.previewUrl) return override.previewUrl;
+    const url = memberByRole(roleId).photo_url ?? "";
+    if (url.trim().length) return url;
+    return "";
+  };
 
   const handleUpdatePersonel = async () => {
     if (savingPersonel) return;
@@ -343,7 +390,7 @@ export default function VesselPersonelSection({
 
     try {
       setSavingPersonel(true);
-      await updateVesselPersonelApiVesselPersonelVesselIdPut({
+      await updateVesselPersonnelApiVesselVesselIdPersonnelPut({
         path: {
           vessel_id: vesselId,
         },
@@ -368,8 +415,31 @@ export default function VesselPersonelSection({
           no_telp_masinis3: normalizeNullable(personelForm.no_telp_masinis3),
         },
       });
+
+      const photoEntries = Object.entries(personelPhotoOverrides) as Array<
+        [PersonelRoleId, PersonelPhotoOverride]
+      >;
+      if (photoEntries.length > 0) {
+        const photoBody: Partial<Record<PersonnelPhotoField, File>> = {};
+        photoEntries.forEach(([roleId, override]) => {
+          if (!override?.file) return;
+          const key = ROLE_TO_PHOTO_KEY[roleId];
+          photoBody[key] = override.file;
+        });
+
+        await updatePersonnelPhotoApiVesselVesselIdPersonnelPhotoPut({
+          path: { vessel_id: vesselId },
+          body: photoBody,
+        });
+      }
+
       toast.success("Personil kapal berhasil diupdate");
       setOpenPersonelDialog(false);
+      Object.values(personelPhotoOverrides).forEach((override) => {
+        if (!override) return;
+        URL.revokeObjectURL(override.previewUrl);
+      });
+      setPersonelPhotoOverrides({});
       await onUpdated();
     } catch (err) {
       console.error("Failed to update vessel personel:", err);
@@ -383,50 +453,50 @@ export default function VesselPersonelSection({
     {
       id: "nahkoda",
       title: "Nahkoda",
-      name: asset.nahkoda,
-      sid: asset.sid_nahkoda,
-      telp: asset.no_telp_nahkoda,
-      imageUrl: getPersonelDisplayImageUrl("nahkoda", 0),
+      name: memberByRole("nahkoda").name ?? undefined,
+      sid: memberByRole("nahkoda").sid ?? undefined,
+      telp: memberByRole("nahkoda").phone ?? undefined,
+      imageUrl: getPersonelDisplayImageUrl("nahkoda"),
     },
     {
       id: "mualim1",
       title: "Mualim I",
-      name: asset.mualim1,
-      sid: asset.sid_mualim1,
-      telp: asset.no_telp_mualim1,
-      imageUrl: getPersonelDisplayImageUrl("mualim1", 1),
+      name: memberByRole("mualim1").name ?? undefined,
+      sid: memberByRole("mualim1").sid ?? undefined,
+      telp: memberByRole("mualim1").phone ?? undefined,
+      imageUrl: getPersonelDisplayImageUrl("mualim1"),
     },
     {
       id: "mualim2",
       title: "Mualim II",
-      name: asset.mualim2,
-      sid: asset.sid_mualim2,
-      telp: asset.no_telp_mualim2,
-      imageUrl: getPersonelDisplayImageUrl("mualim2", 2),
+      name: memberByRole("mualim2").name ?? undefined,
+      sid: memberByRole("mualim2").sid ?? undefined,
+      telp: memberByRole("mualim2").phone ?? undefined,
+      imageUrl: getPersonelDisplayImageUrl("mualim2"),
     },
     {
       id: "kkm",
       title: "KKM",
-      name: asset.kkm,
-      sid: asset.sid_kkm,
-      telp: asset.no_telp_kkm,
-      imageUrl: getPersonelDisplayImageUrl("kkm", 3),
+      name: memberByRole("kkm").name ?? undefined,
+      sid: memberByRole("kkm").sid ?? undefined,
+      telp: memberByRole("kkm").phone ?? undefined,
+      imageUrl: getPersonelDisplayImageUrl("kkm"),
     },
     {
       id: "masinis2",
       title: "Masinis II",
-      name: asset.masinis2,
-      sid: asset.sid_masinis2,
-      telp: asset.no_telp_masinis2,
-      imageUrl: getPersonelDisplayImageUrl("masinis2", 4),
+      name: memberByRole("masinis2").name ?? undefined,
+      sid: memberByRole("masinis2").sid ?? undefined,
+      telp: memberByRole("masinis2").phone ?? undefined,
+      imageUrl: getPersonelDisplayImageUrl("masinis2"),
     },
     {
       id: "masinis3",
       title: "Masinis III",
-      name: asset.masinis3,
-      sid: asset.sid_masinis3,
-      telp: asset.no_telp_masinis3,
-      imageUrl: getPersonelDisplayImageUrl("masinis3", 5),
+      name: memberByRole("masinis3").name ?? undefined,
+      sid: memberByRole("masinis3").sid ?? undefined,
+      telp: memberByRole("masinis3").phone ?? undefined,
+      imageUrl: getPersonelDisplayImageUrl("masinis3"),
     },
   ];
 
@@ -566,9 +636,9 @@ export default function VesselPersonelSection({
         <DialogContent className="sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>Edit Personil Kapal</DialogTitle>
-            <DialogDescription>
-              Ubah data personil lalu klik simpan. Upload foto hanya untuk
-              tampilan lokal (belum tersimpan ke server).
+          <DialogDescription>
+              Ubah data personil lalu klik simpan. Upload foto akan tersimpan ke
+              server.
             </DialogDescription>
           </DialogHeader>
 
@@ -576,10 +646,7 @@ export default function VesselPersonelSection({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {PERSONEL_EDIT_SECTIONS.map((section) => {
                 const photoOverride = personelPhotoOverrides[section.id];
-                const imageUrl = getPersonelDisplayImageUrl(
-                  section.id,
-                  section.portraitIndex,
-                );
+                const imageUrl = getPersonelDisplayImageUrl(section.id);
                 const fallbackAvatar = buildAvatarDataUrl(
                   getInitials(personelForm[section.nameKey] || section.title),
                   pickAvatarBg(
@@ -595,7 +662,7 @@ export default function VesselPersonelSection({
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <Image
-                          src={imageUrl}
+                          src={imageUrl || fallbackAvatar}
                           alt={section.title}
                           width={48}
                           height={48}
@@ -639,7 +706,9 @@ export default function VesselPersonelSection({
                           disabled={!photoOverride}
                           onClick={() => handleRemovePersonelPhoto(section.id)}
                           title={
-                            photoOverride ? "Hapus foto" : "Belum ada foto"
+                            photoOverride
+                              ? "Batalkan foto yang dipilih"
+                              : "Belum ada foto dipilih"
                           }
                         >
                           Hapus

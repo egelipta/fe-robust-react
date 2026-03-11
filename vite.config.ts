@@ -17,6 +17,10 @@ export default defineConfig({
         // An empty string rewrites the domain to the proxy host.
         cookieDomainRewrite: "",
       },
+      "/uploads": {
+        target: "http://192.168.113.180:8888",
+        changeOrigin: true,
+      },
     },
   },
 

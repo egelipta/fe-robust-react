@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
-import { getVesselApiVesselVesselIdGet } from "@/api/base/sdk.gen";
+import {
+  getVesselApiVesselVesselIdGet,
+  getVesselPersonnelApiVesselVesselIdPersonnelGet,
+} from "@/api/base/sdk.gen";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Image } from "antd";
@@ -13,7 +16,9 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import OverviewTabs from "./tabs/Overview";
-import VesselPersonelSection from "./VesselPersonelSection";
+import VesselPersonelSection, {
+  type VesselPersonnelData,
+} from "./VesselPersonelSection";
 
 interface AssetDetail {
   vessel_id: number;
@@ -62,6 +67,7 @@ export default function DetailVesselPage() {
   const vesselId = Number(id);
   const [loading, setLoading] = useState(false);
   const [asset, setAsset] = useState<AssetDetail | null>(null);
+  const [personnel, setPersonnel] = useState<VesselPersonnelData | null>(null);
 
   const fetchAsset = async (vesselId: number) => {
     try {
@@ -83,9 +89,70 @@ export default function DetailVesselPage() {
     }
   };
 
+  const fetchPersonnel = async (vesselId: number) => {
+    try {
+      const res = await getVesselPersonnelApiVesselVesselIdPersonnelGet({
+        path: { vessel_id: vesselId },
+      });
+
+      const payload =
+        (res as { data?: { data?: unknown } })?.data?.data ??
+        (res as { data?: unknown })?.data ??
+        null;
+
+      if (!payload || typeof payload !== "object") {
+        setPersonnel(null);
+        return;
+      }
+
+      const data = payload as {
+        vessel_id?: unknown;
+        vessel_name?: unknown;
+        personnel?: unknown;
+      };
+
+      const normalizeString = (value: unknown): string | null => {
+        if (value == null) return null;
+        if (typeof value === "string") {
+          const trimmed = value.trim();
+          return trimmed.length ? trimmed : null;
+        }
+        if (typeof value === "number" && Number.isFinite(value)) return String(value);
+        return null;
+      };
+
+      const personnelRecord =
+        data.personnel && typeof data.personnel === "object" ? (data.personnel as Record<string, unknown>) : {};
+
+      const roleIds = ["nahkoda", "mualim1", "mualim2", "kkm", "masinis2", "masinis3"] as const;
+      const next: VesselPersonnelData = {
+        vessel_id: Number(data.vessel_id ?? vesselId),
+        vessel_name: normalizeString(data.vessel_name) ?? asset?.vessel_name ?? "",
+        personnel: {},
+      };
+
+      roleIds.forEach((roleId) => {
+        const raw = personnelRecord[roleId];
+        const member = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+        next.personnel[roleId] = {
+          name: normalizeString(member.name),
+          sid: normalizeString(member.sid),
+          phone: normalizeString(member.phone),
+          photo_url: normalizeString(member.photo_url),
+        };
+      });
+
+      setPersonnel(next);
+    } catch (err) {
+      console.error("Failed to fetch vessel personnel:", err);
+      setPersonnel(null);
+    }
+  };
+
   useEffect(() => {
     if (!id || !Number.isFinite(vesselId)) return;
-    fetchAsset(vesselId);
+    void fetchAsset(vesselId);
+    void fetchPersonnel(vesselId);
   }, [id, vesselId]);
 
   return (
@@ -172,12 +239,12 @@ export default function DetailVesselPage() {
                         <span>{asset.tgl_terbit ?? "-"}</span>
                       </div>
                       <div className="grid grid-cols-[160px_1fr] text-sm">
-                        <span>Tgl Expired</span>
-                        <span>{asset.tgl_expired ?? "-"}</span>
-                      </div>
-                      <div className="grid grid-cols-[160px_1fr] text-sm">
                         <span>Status SMC</span>
                         <span>{asset.statussmc ?? "-"}</span>
+                      </div>
+                      <div className="grid grid-cols-[160px_1fr] text-sm">
+                        <span>Tgl Expired</span>
+                        <span>{asset.tgl_expired ?? "-"}</span>
                       </div>
                       <div className="grid grid-cols-[160px_1fr] text-sm">
                         <span>Tahapan Verifikasi</span>
@@ -190,8 +257,10 @@ export default function DetailVesselPage() {
 
               <VesselPersonelSection
                 vesselId={vesselId}
-                asset={asset}
-                onUpdated={() => fetchAsset(vesselId)}
+                personnel={personnel}
+                onUpdated={async () => {
+                  await Promise.all([fetchAsset(vesselId), fetchPersonnel(vesselId)]);
+                }}
               />
             </div>
             <div>

@@ -3,7 +3,6 @@ import {
   assignUserApiUserCreatePost,
   createEmployeeApiEmployeePost,
   createRoleUserApiRoleUsersAssignPost,
-  deleteUserApiEmployeeEmployeeIdDelete,
   getAllVesselRoleUsersApiRoleUsersGet,
   getCabangByCompanyApiListCabangAllGet,
   getCompaniesAllApiListCompanyAllGet,
@@ -22,7 +21,6 @@ import { toast } from "sonner";
 import { Plus, RefreshCcw, Search } from "lucide-react";
 import AssignAccountDialog from "./components/AssignAccountDialog";
 import CreateEmployeeDialog from "./components/CreateEmployeeDialog";
-import DeleteUserDialog from "./components/DeleteUserDialog";
 import EditEmployeeDialog from "./components/EditEmployeeDialog";
 import ManageRoleDialog from "./components/ManageRoleDialog";
 import ResetPasswordDialog from "./components/ResetPasswordDialog";
@@ -332,8 +330,6 @@ export default function UserManagementPage() {
   const [openAssignAccount, setOpenAssignAccount] = useState(false);
   const [openRoleDialog, setOpenRoleDialog] = useState(false);
   const [openResetPassword, setOpenResetPassword] = useState(false);
-
-  const [deleteTarget, setDeleteTarget] = useState<EmployeeRecord | null>(null);
 
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeRecord | null>(null);
 
@@ -704,7 +700,7 @@ export default function UserManagementPage() {
           username: resetPasswordForm.username,
           new_password: resetPasswordForm.new_password,
           confirm_password: resetPasswordForm.confirm_password,
-        },
+        } as Parameters<typeof resetUserPasswordApiUserResetPasswordPost>[0]["body"],
       });
 
       toast.success(getMessage(response, "Password berhasil direset"));
@@ -766,26 +762,6 @@ export default function UserManagementPage() {
     }
   };
 
-  const handleDeleteEmployee = async () => {
-    if (!deleteTarget) return;
-
-    try {
-      setSubmitting(true);
-      const response = await deleteUserApiEmployeeEmployeeIdDelete({
-        path: { employee_id: deleteTarget.employee_id },
-      });
-
-      toast.success(getMessage(response, "User berhasil dihapus"));
-      setDeleteTarget(null);
-      await fetchData();
-    } catch (error) {
-      console.error("Delete user failed:", error);
-      toast.error("Gagal menghapus user");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
     <div className="h-full flex flex-col p-3 gap-3">
       <Card className="p-3">
@@ -826,7 +802,6 @@ export default function UserManagementPage() {
           onManageRole={openRoleManageDialog}
           onResetPassword={openResetDialog}
           onToggleStatus={handleToggleStatus}
-          onDelete={setDeleteTarget}
           statusText={statusText}
         />
       </Card>
@@ -882,13 +857,6 @@ export default function UserManagementPage() {
         setForm={setResetPasswordForm}
         submitting={submitting}
         onSubmit={handleResetPassword}
-      />
-
-      <DeleteUserDialog
-        target={deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-        submitting={submitting}
-        onConfirm={handleDeleteEmployee}
       />
     </div>
   );
