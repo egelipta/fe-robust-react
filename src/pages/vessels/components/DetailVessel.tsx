@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import OverviewTabs from "./tabs/Overview";
+import TrendTabs from "./tabs/Trend";
 import VesselPersonelSection, {
   type VesselPersonnelData,
 } from "./VesselPersonelSection";
@@ -289,18 +290,7 @@ export default function DetailVesselPage() {
                     </Card>
                   </TabsContent>
                   <TabsContent value="reports">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Reports</CardTitle>
-                        <CardDescription>
-                          Generate and download your detailed reports. Export
-                          data in multiple formats for analysis.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="text-muted-foreground text-sm">
-                        You have 5 reports ready and available to export.
-                      </CardContent>
-                    </Card>
+                    <TrendTabs />
                   </TabsContent>
                 </Tabs>
               </Card>
