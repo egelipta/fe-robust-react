@@ -3,6 +3,7 @@ import { LayoutGrid, List, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Image } from "antd";
 import {
+  deletePersonnelPhotoApiVesselVesselIdPersonnelPhotoPhotoTypeDelete,
   updatePersonnelPhotoApiVesselVesselIdPersonnelPhotoPut,
   updateVesselPersonnelApiVesselVesselIdPersonnelPut,
 } from "@/api/base/sdk.gen";
@@ -263,6 +264,8 @@ export default function VesselPersonelSection({
 }: Props) {
   const [openPersonelDialog, setOpenPersonelDialog] = useState(false);
   const [savingPersonel, setSavingPersonel] = useState(false);
+  const [deletingPhotoRoleId, setDeletingPhotoRoleId] =
+    useState<PersonelRoleId | null>(null);
   const [viewMode, setViewMode] = useState<PersonelViewMode>("grid");
   const [personelForm, setPersonelForm] =
     useState<PersonelForm>(initialPersonelForm);
@@ -379,6 +382,33 @@ export default function VesselPersonelSection({
     const url = memberByRole(roleId).photo_url ?? "";
     if (url.trim().length) return url;
     return "";
+  };
+
+  const handleDeletePersonelPhoto = async (roleId: PersonelRoleId) => {
+    if (!Number.isInteger(vesselId) || vesselId <= 0) {
+      toast.error("Vessel ID tidak valid");
+      return;
+    }
+
+    const serverUrl = memberByRole(roleId).photo_url;
+    if (!serverUrl || !serverUrl.trim().length) return;
+
+    const confirmed = window.confirm("Yakin ingin menghapus foto ini?");
+    if (!confirmed) return;
+
+    try {
+      setDeletingPhotoRoleId(roleId);
+      await deletePersonnelPhotoApiVesselVesselIdPersonnelPhotoPhotoTypeDelete({
+        path: { vessel_id: vesselId, photo_type: roleId },
+      });
+      toast.success("Foto berhasil dihapus");
+      await onUpdated();
+    } catch (err) {
+      console.error("Failed to delete personnel photo:", err);
+      toast.error("Gagal menghapus foto");
+    } finally {
+      setDeletingPhotoRoleId(null);
+    }
   };
 
   const handleUpdatePersonel = async () => {
@@ -644,13 +674,16 @@ export default function VesselPersonelSection({
 
           <ScrollArea className="max-h-[70vh] pr-2">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {PERSONEL_EDIT_SECTIONS.map((section) => {
-                const photoOverride = personelPhotoOverrides[section.id];
-                const imageUrl = getPersonelDisplayImageUrl(section.id);
-                const fallbackAvatar = buildAvatarDataUrl(
-                  getInitials(personelForm[section.nameKey] || section.title),
-                  pickAvatarBg(
-                    `${section.id}:${personelForm[section.nameKey]}`,
+	              {PERSONEL_EDIT_SECTIONS.map((section) => {
+	                const photoOverride = personelPhotoOverrides[section.id];
+	                const imageUrl = getPersonelDisplayImageUrl(section.id);
+	                const serverPhotoUrl =
+	                  memberByRole(section.id).photo_url ?? "";
+	                const hasServerPhoto = serverPhotoUrl.trim().length > 0;
+	                const fallbackAvatar = buildAvatarDataUrl(
+	                  getInitials(personelForm[section.nameKey] || section.title),
+	                  pickAvatarBg(
+	                    `${section.id}:${personelForm[section.nameKey]}`,
                   ),
                 );
 
@@ -681,38 +714,59 @@ export default function VesselPersonelSection({
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <Button asChild size="sm" variant="outline">
-                          <label
-                            htmlFor={`personel-photo-${section.id}`}
-                            className="cursor-pointer"
+                        {!hasServerPhoto && (
+                          <>
+                            <Button
+                              asChild
+                              size="sm"
+                              variant="outline"
+                              disabled={savingPersonel}
+                            >
+                              <label
+                                htmlFor={`personel-photo-${section.id}`}
+                                className="cursor-pointer"
+                              >
+                                Upload
+                              </label>
+                            </Button>
+                            <input
+                              id={`personel-photo-${section.id}`}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                void handlePersonelPhotoChange(section.id, file);
+                                e.currentTarget.value = "";
+                              }}
+                            />
+                          </>
+                        )}
+
+                        {photoOverride ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={savingPersonel}
+                            onClick={() => handleRemovePersonelPhoto(section.id)}
+                            title="Batalkan foto yang dipilih"
                           >
-                            Upload
-                          </label>
-                        </Button>
-                        <input
-                          id={`personel-photo-${section.id}`}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            void handlePersonelPhotoChange(section.id, file);
-                            e.currentTarget.value = "";
-                          }}
-                        />
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={!photoOverride}
-                          onClick={() => handleRemovePersonelPhoto(section.id)}
-                          title={
-                            photoOverride
-                              ? "Batalkan foto yang dipilih"
-                              : "Belum ada foto dipilih"
-                          }
-                        >
-                          Hapus
-                        </Button>
+                            Batal
+                          </Button>
+                        ) : hasServerPhoto ? (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={
+                              savingPersonel ||
+                              deletingPhotoRoleId === section.id
+                            }
+                            onClick={() => void handleDeletePersonelPhoto(section.id)}
+                            title="Hapus foto dari server"
+                          >
+                            {deletingPhotoRoleId === section.id ? "Menghapus..." : "Hapus"}
+                          </Button>
+                        ) : null}
                       </div>
                     </div>
 
